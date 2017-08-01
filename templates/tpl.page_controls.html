@@ -1,0 +1,35 @@
+<div class="row">
+    <div class="col-sm-2">
+        <!-- BEGIN button_play -->
+            <button data-id="{ID_PLAY}" class="limply-play btn btn-default {STATUS_PLAY}">
+                {TXT_PLAY} <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+            </button>
+        <!-- END button_play -->
+
+        <!-- BEGIN button_pause -->
+            <button data-id="{ID_PAUSE}" class="limply-pause btn btn-default {STATUS_PAUSE}">
+                {TXT_PAUSE} <span class="glyphicon glyphicon-pause" aria-hidden="true"></span>
+            </button>
+        <!-- END button_pause -->
+
+        <!-- BEGIN button_continue -->
+            <button data-id="{ID_CONTINUE}" class="limply-continue btn btn-default {STATUS_CONTINUE}">
+                {TXT_CONTINUE} <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+            </button>
+        <!-- END button_continue -->
+    </div>
+
+    <!-- BEGIN volume -->
+    <div class="col-sm-3 limply-volume-div">
+
+        <div style="display: inline-block; vertical-align: middle">
+            <img height="25px" src="{ICON_VOLUME}" alt="{TXT_VOLUME}" title="{TXT_VOLUME}" />
+        </div>
+
+        <div style="display: inline-block; vertical-align: middle">
+            <input type="range" data-id="{ID_VOLUME}" value="{VALUE_VOLUME}" class="limply-volume" />
+        </div>
+
+    </div>
+    <!-- END volume -->
+</div>

@@ -1,0 +1,55 @@
+//
+// Copyright (c) 2017 Institut fuer Lern-Innovation, Friedrich-Alexander-Universitaet Erlangen-Nuernberg
+// GPLv3, see LICENSE
+//
+// @author Fred Neumann <fred.neumann@fau.de>
+// @version $Id$
+//
+
+<!-- language file start -->
+limited_media_player#:#Beschränkte Medienwiedergabe
+cmd_insert#:#Beschränkte Medienwiedergabe einfügen
+edit_limited_media_player#:#Beschränkte Medienwiedergabe bearbeiten
+err_save_properties#:#Die Einstellungen konnten nicht gespeichert werden!
+err_save_media_obj#:#Das Medienobjekt konnte nicht gespeichert werden!
+settings#:#Einstellungen
+settings_details#:#Details zur Wiedergabe
+settings_debug#:#Informationen zur Fehlersuche
+medium_edit_notice#:#Bitte inaktiv lassen und über beschränkte Wiedergabe bearbeiten!
+medium_title#:#Titel
+medium_file#:#Mediendatei
+medium_file_info#:#Mediendatei, die abgespielt werden soll
+medium_startpic#:#Startbild
+medium_startpic_info#:#Startbild, das vor der Wiedergabe angezeigt wird.
+medium_height#:#Player-Höhe (Pixel)
+medium_width#:#Player-Breite (Pixel)
+play_mode#:#Abspielart
+play_in_modal#:#In Modal wiedergeben
+play_in_modal_info#:#Die Wiedergabe findet in einem Modal statt. Währenddessen ist die Fragen im Hintergrund nicht bearbeitbar.
+play_on_page#:#Auf der Seite wiedergeben
+play_on_page_info#:#Die Wiedergabe findet auf der Fragenseite statt. Währenddessen kann die Frage beantwortet werden.
+play_pause#:#Pausieren
+play_with_pause#:#Pausieren ermöglichen
+play_with_pause_info#:#Das Abspielen kann durch einen Pausenknopf unterbrochen und fortgesetzt werden. Wechselt der Nutzer während des Abspielens zu einer anderen Frage und kehrt er zurück, kann das Medium an der unterbrochenen Stelle fortgesetzt werden.
+play_without_pause#:#Pausieren unterbinden
+play_without_pause_info#:#Es gibt keinen Pausenknopf. Wechselt der Nutzer während des Abspielens zu einer anderen Frage und kehrt er zurück, gilt die Wiedergabe als verbraucht.
+limit_plays#:#Maximalzahl der Wiedergaben
+limit_plays_preview#:#(unbegrenzt in der Vorschau)
+limit_plays_user#:#(für Nutzer)
+limit_plays_session#:#(in der Sitzung)
+limit_plays_testpass#:#(im Testlauf)
+limit_context#:#Bezug der Zählung
+limit_context_user#:#Alle Wiedergaben eines Nutzers
+limit_context_session#:#Wiedergaben in der Login-Sitzung
+limit_context_testpass#:#Wiedergaben im Testlauf
+runtime_plays#:#Gestartete Wiedergaben:
+runtime_max_plays#:#Maximale Wiedergaben:
+runtime_seconds#:#Gespielte Sekunden:
+runtime_limit_reached#:#Die maximale Anzahl an Wiedergaben wurde erreicht.
+runtime_start_first#:#Erste Wiedergabe starten.
+runtime_start_next#:#Neue Wiedergabe starten.
+runtime_no_limit#:#Keine Begrenzung
+runtime_play#:#Wiedergeben
+runtime_pause#:#Pausieren
+runtime_continue#:#Fortsetzen
+runtime_volume#:#Lautstärke

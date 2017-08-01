@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script type="text/javascript" src="{JQUERY_URL}"></script>
+	<script type="text/javascript" src="{PLAYER_JS_URL}"></script>
+    <script type="text/javascript" src="{FRAME_JS_URL}"></script>
+	<link rel="stylesheet" type="text/css" href="{PLAYER_CSS_URL}" media="screen" />
+</head>
+<style>
+    html, body, audio, video {
+        margin: 0;
+        padding: 0;
+    }
+
+    #medium {
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+
+    .mejs__container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        visibility: hidden;
+    }
+
+    #startpic {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 999999;
+    }
+
+    #transparent {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000000;
+    }
+</style>
+<body>
+<!-- BEGIN message -->
+{MESSAGE}
+<!-- END message -->
+<!-- BEGIN startpic -->
+    <img id="startpic" height="{HEIGHT}" src="{FILE}"/>
+<!-- END startpic -->
+<!-- BEGIN audio -->
+ 	<audio id="medium" width="{WIDTH}" height="{HEIGHT}">
+		<source src="{FILE}" type="{MIME}">
+	</audio>
+    <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
+<!-- END audio -->
+<!-- BEGIN video -->
+    <video id="medium" width="{WIDTH}" height="{HEIGHT}">
+        <source src="{FILE}" type="{MIME}">
+    </video>
+    <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
+<!-- END video -->
+	<script>
+        $(function() {
+            ilPCLimitedMediaPlayerFrame.initPlayer({CONFIG});
+        });
+	</script>
+</body>
+</html>

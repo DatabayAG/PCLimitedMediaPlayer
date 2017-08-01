@@ -1,0 +1,10 @@
+{
+  "comments": false,
+  "presets": [
+    ["env", {
+      "targets": {
+        "browsers": ["last 5 versions", "ie >= 9", "ios >= 8", "android >= 4"]
+      }
+    }]
+  ]
+}

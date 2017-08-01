@@ -1,0 +1,22 @@
+//
+// Copyright (c) 2017 Institut fuer Lern-Innovation, Friedrich-Alexander-Universitaet Erlangen-Nuernberg
+// GPLv3, see LICENSE
+//
+// @author Fred Neumann <fred.neumann@fau.de>
+// @version $Id$
+//
+
+<!-- language file start -->
+cmd_insert#:#Insert Limited Media Player
+edit_limited_media_player#:#Edit Limited Media Player
+medium_title#:#Title
+limit_starts#:#Limited Playbacks
+limit_starts_count#:#Number of Playbacks
+limit_starts_context#:#Context for Counting
+limit_starts_user#:#All times
+limit_starts_session#:#Login Session
+limit_starts_testpass#:#Test Pass
+limit_starts_current_plays_text#:#Started Playbacks: &nbsp;
+limit_starts_max_plays_text#:#Maximum Playbacks: &nbsp;
+limit_starts_limit_reached_text#:#The maximum number of playbacks is reached.
+limit_starts_first_time_text#:#Start the player for the first time.
