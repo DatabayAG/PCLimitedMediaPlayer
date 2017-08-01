@@ -342,7 +342,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         if ($a_create)
         {
             $limit_plays->setValue(1);
-            $limit_context->setValue('limit_context_testpass');
+            $limit_context->setValue('testpass');
             $play_modal->setValue(0);
             $play_pause->setValue(1);
         }

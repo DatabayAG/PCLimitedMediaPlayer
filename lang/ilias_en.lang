@@ -9,14 +9,46 @@
 <!-- language file start -->
 cmd_insert#:#Insert Limited Media Player
 edit_limited_media_player#:#Edit Limited Media Player
+err_save_properties#:#The settings can't be saced!
+err_save_media_obj#:#The media object can't be saved!
+settings#:#Settings
+settings_details#:#Playing Details
+settings_debug#:#Debugging Information
+medium_edit_notice#:#Please keept it incative and edit the related 'Limited Media Player' below.
 medium_title#:#Title
-limit_starts#:#Limited Playbacks
-limit_starts_count#:#Number of Playbacks
-limit_starts_context#:#Context for Counting
-limit_starts_user#:#All times
-limit_starts_session#:#Login Session
-limit_starts_testpass#:#Test Pass
-limit_starts_current_plays_text#:#Started Playbacks: &nbsp;
-limit_starts_max_plays_text#:#Maximum Playbacks: &nbsp;
-limit_starts_limit_reached_text#:#The maximum number of playbacks is reached.
-limit_starts_first_time_text#:#Start the player for the first time.
+medium_file#:#Medium File
+medium_file_info#:#Upload here the mdeium that should be played
+medium_startpic#:#Start Picture
+medium_startpic_info#:#The start picture will be shown when the player is stpped or paused.
+medium_height#:#Player Width (Pixels)
+medium_width#:#Player Height (Pixels)
+play_mode#:#Play Mode
+play_in_modal#:#Play In Modal
+play_in_modal_info#:#The medium is played in a modal that prevents the question from being answered.
+play_on_page#:#Play On Page
+play_on_page_info#:#The medium is played directly on the page and the question can be answered at the same time.
+play_pause#:#Pause Setting
+play_with_pause#:#Allow Pause
+play_with_pause_info#:#The playback can be interrupted by a 'Pause' button and continued later. When the user navigated to another question during playback and comed back, then it can be continued from the lst position.
+play_without_pause#:#Prevent Pause
+play_without_pause_info#:#There is no 'Pause' button. When the user navigated to another question during playback and comed back, then the replay is consumed.
+limit_plays#:#Number of Plays
+limit_plays_preview#:#(unlimited in preview)
+limit_plays_user#:#(for the user)
+limit_plays_session#:#(in the session)
+limit_plays_testpass#:#(in the test pass)
+limit_context#:#Counting Context
+limit_context_user#:#All Plays of the User
+limit_context_session#:#Plays in the Login Sessioin
+limit_context_testpass#:#Plays in the Test Pass
+runtime_plays#:#Stareted Plays:
+runtime_max_plays#:Maximum Plays:
+runtime_seconds#:#Played Seconds:
+runtime_limit_reached#:#The maximum number of plays is reached.
+runtime_start_first#:#Start the First Play
+runtime_start_next#:#Start a New Play
+runtime_no_limit#:#No Limit
+runtime_play#:#Play
+runtime_pause#:#Pause
+runtime_continue#:#Continue
+runtime_volume#:#Volume

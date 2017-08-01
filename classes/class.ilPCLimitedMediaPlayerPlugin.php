@@ -52,7 +52,7 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 	/**
 	 * Get Javascript files
 	 */
-	function getJavascriptFiles()
+	function getJavascriptFiles($a_mode = null)
 	{
 		return array('js/ilPCLimitedMediaPlayerPage.js');
 	}
@@ -60,7 +60,7 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 	/**
 	 * Get css files
 	 */
-	function getCssFiles()
+	function getCssFiles($a_mode = null)
 	{
         return array();
 	}
