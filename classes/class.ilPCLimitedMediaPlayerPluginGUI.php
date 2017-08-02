@@ -906,6 +906,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     protected function addPageMediaObject()
     {
         $pageObj = $this->getPageObject();
+        $pageObj->read();
         $pageObj->buildDom(true);
         $pageObj->addHierIDs();
 
