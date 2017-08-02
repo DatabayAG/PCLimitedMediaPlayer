@@ -116,15 +116,28 @@ class ilLimitedMediaPlayerGUI
 	 */
 	protected function showPlayer()
 	{
-		global $lng;
+		if (is_file('Services/WebAccessChecker/classes/class.ilWACSignedPath.php'))
+		{
+			require_once("Services/WebAccessChecker/classes/class.ilWACSignedPath.php");
+		}
 
-        // @todo: respect web access checker
-        $medium_path = LIMPLY_BACKSTEPS . 'data/'.CLIENT_ID.'/mobs/mm_'. $this->mob_id . '/' . $this->file;
+        $medium_path = './data/'.CLIENT_ID.'/mobs/mm_'. $this->mob_id . '/' . $this->file;
+        if (class_exists('ilWACSignedPath'))
+		{
+			$medium_path = ilWACSignedPath::signFile($medium_path);
+		}
+		$medium_path = LIMPLY_BACKSTEPS . $medium_path;
+
 
         if ($this->startpic)
         {
-            $startpic_path = LIMPLY_BACKSTEPS . 'data/'.CLIENT_ID.'/mobs/mm_'. $this->mob_id . '/' . $this->startpic;
-        }
+            $startpic_path = './data/'.CLIENT_ID.'/mobs/mm_'. $this->mob_id . '/' . $this->startpic;
+			if (class_exists('ilWACSignedPath'))
+			{
+				$startpic_path = ilWACSignedPath::signFile($startpic_path);
+			}
+			$startpic_path = LIMPLY_BACKSTEPS . $startpic_path;
+		}
         else
         {
             $startpic_path = LIMPLY_BACKSTEPS . ilUtil::getImagePath('mcst_preview.svg');
