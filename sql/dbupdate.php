@@ -57,3 +57,43 @@
         $ilDB->addPrimaryKey("copg_pgcp_limply_uses", array("parent_id", "page_id", "mob_id", "user_id"));
     }
 ?>
+<#2>
+<?php
+
+    if (!$ilDB->tableExists('copg_pgcp_limply_limits'))
+    {
+        $fields = array(
+            'parent_id' => array(
+                'type' => 'integer',
+                'length' => 4,
+                'notnull' => true
+            ),
+            'page_id' => array(
+                'type' => 'integer',
+                'length' => 4,
+                'notnull' => true,
+                'default' => 0
+            ),
+            'mob_id' => array(
+                'type' => 'integer',
+                'length' => 4,
+                'notnull' => true,
+                'default' => 0
+            ),
+            'user_id' => array(
+                'type' => 'integer',
+                'length' => 4,
+                'notnull' => true,
+                'default' => 0
+            ),
+            'limit_plays' => array(
+                'type' => 'integer',
+                'length' => 4,
+                'notnull' => true,
+                'default' => 0
+            )
+        );
+        $ilDB->createTable("copg_pgcp_limply_limits", $fields);
+        $ilDB->addPrimaryKey("copg_pgcp_limply_limits", array("parent_id", "page_id", "mob_id", "user_id"));
+    }
+?>

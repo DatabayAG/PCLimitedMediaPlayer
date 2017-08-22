@@ -252,4 +252,3 @@ class ilLimitedMediaPlayerUsage
         $_SESSION['limply_volume'] = $volume;
     }
 }
-?>

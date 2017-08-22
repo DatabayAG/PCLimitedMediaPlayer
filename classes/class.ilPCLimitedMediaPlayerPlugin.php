@@ -76,5 +76,3 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
     }
 
 }
-
-?>

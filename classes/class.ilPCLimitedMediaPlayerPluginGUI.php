@@ -467,6 +467,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 // get usage and playing status
                 // adjust the context and limit in preview
                 require_once (__DIR__ . "/class.ilLimitedMediaPlayerUsage.php");
+                require_once (__DIR__ . "/class.ilLimitedMediaPlayerLimits.php");
                 if ($this->getViewMode() == self::VIEW_PREVIEW)
                 {
                     $limit_plays = 0;
@@ -474,7 +475,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 }
                 else
                 {
-                    $limit_plays = $a_properties['limit_plays'];
+                    $limits = ilLimitedMediaPlayerLimits($this->getParentId(), $this->getPageId(), $mob->getId(), $ilUser->getId());
+                    $limit_plays = $limits->getEffectiveLimit($a_properties['limit_plays']);
                     $limit_context = $a_properties['limit_context'];
                 }
 
@@ -1053,5 +1055,3 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     }
 
 }
-
-?>
