@@ -75,4 +75,14 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
         return $this->getDirectory().'/player.php';
     }
 
+    /**
+     * Get the limited media on a page
+     * @param   array   $a_page_id
+     * @return  array   [['mob_id' => int, 'title' => string, 'limit' => int], ...]
+     */
+    public function getLimitedMedia($a_page_id, $a_mob_id = 0)
+    {
+        // todo: implement xml analysis
+        return array();
+    }
 }
