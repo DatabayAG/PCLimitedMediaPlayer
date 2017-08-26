@@ -76,13 +76,66 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
     }
 
     /**
-     * Get the limited media on a page
-     * @param   array   $a_page_id
-     * @return  array   [['mob_id' => int, 'title' => string, 'limit' => int], ...]
+     * Find the limited media on pages
+     * @param   int[]       $a_page_ids     ids of pages to scan
+     * @param   string      $a_parent_type  type of pages to scan
+     * @param   string      $a_lang         language of pages to scan
+     * @param   int[]|null  $a_mob_id       id of a media object to search for
+     *
+     * @return  array   [['page_id' => int, 'mob_id' => int, 'title' => string, 'limit' => int], ...]
      */
-    public function getLimitedMedia($a_page_id, $a_mob_id = 0)
+    public static function findLimitedMedia($a_page_ids, $a_parent_type = 'qpl', $a_lang = '-', $a_mob_id = null)
     {
-        // todo: implement xml analysis
-        return array();
+        global $ilDB;
+
+        $query = "SELECT page_id, content FROM page_object "
+            ." WHERE parent_type = ". $ilDB->quote($a_parent_type, 'txt')
+            ." AND lang = ". $ilDB->quote($a_lang, 'txt')
+            ." AND ". $ilDB->in('page_id', $a_page_ids, 'integer')
+            ." AND " . $ilDB->like('content', 'text', '%PCLimitedMediaPlayer%', false);
+        $result = $ilDB->query($query);
+
+        $found = array();
+        while ($row = $ilDB->fetchAssoc($result))
+        {
+            $dom = new DOMDocument("1.0", "UTF-8");
+            $dom->loadXML($row['content']);
+
+            $xpath = new DOMXPath($domdoc);
+            $pnodes = $xpath->query("//Plugged[@PluginName='PCLimitedMediaPlayer']");
+
+            /** @var DOMElement $cnode */
+            foreach($pnodes as $pnode)
+            {
+                $properties = array();
+                /** @var DOMElement $child */
+                foreach($pnode->childNodes as $child)
+                {
+                    $properties[$child->getAttribute('Name')] = $child->nodeValue;
+                }
+
+                $mpcid = $properties['medium_pcid'];
+                $mnodes = $xpath->query("//PageContent[@PCID='$mpcid']/MediaObject/MediaAlias");
+                $mnode = $mnodes->item(0);
+                if (isset($mnode))
+                {
+                    $origin = $mnode->getAttribute('OriginId');
+                    $parts = explode('_', $origin);
+                    $mob_id = (int) end($parts);
+
+                    if (!isset($a_mob_id) || $mob_id == $a_mob_id)
+                    {
+                        $found[] = array(
+                            'page_id' => $row['page_id'],
+                            'mob_id' => $mob_id,
+                            'title' => $properties['medium_title'],
+                            'limit' => $properties['limit_plays']
+                        );
+                    }
+                }
+            }
+        }
+
+        return $found;
     }
 }
