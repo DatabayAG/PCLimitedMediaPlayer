@@ -545,7 +545,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         // show info block
-        $btpl->setVariable('INFO', $this->getElementInfoHTML($a_properties, $info, $usage));
+        $btpl->setVariable('INFO', $this->getElementInfoHTML($a_properties, $info, $usage, $limits));
 
         // always show the title
         $btpl->setCurrentBlock('title');
@@ -643,13 +643,15 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      * get the HTML code of the emelent information
      * @param array                         $a_properties
      * @param array                         $info (text => value)
-     * @param ilLimitedMediaPlayerUsage     $usage
+     * @param ilLimitedMediaPlayerUsage     $usageObj
+     * @param ilLimitedMediaPlayerLimit     $limitObj
      */
-    protected function getElementInfoHTML($a_properties, $info = array(), $usage = null)
+    protected function getElementInfoHTML($a_properties, $info = array(), $usageObj = null, $limitObj = null)
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_info.html");
 
-        if (isset($usage))
+        $limit = $a_properties['limit_plays'];
+        if (isset($usageObj))
         {
             if ($this->getViewMode() == self::VIEW_PREVIEW)
             {
@@ -657,17 +659,26 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             }
             else
             {
-                $limit_plays_suffix = $this->txt('limit_plays_'.$a_properties['limit_context']);
+                $limit_plays_suffix = $this->txt('limit_plays_' . $a_properties['limit_context']);
+
+                if (isset($limitObj))
+                {
+                    $limit = $limitObj->getEffectiveLimit($a_properties['limit_plays']);
+                    if ($limit != $a_properties['limit_plays'])
+                    {
+                        $limit_plays_suffix .= ' ' . $this->txt('limit_plays_adapted');
+                    }
+                }
             }
 
-            $tpl->setVariable("MAX_PLAYS", ($a_properties['limit_plays'] ? (int) $a_properties['limit_plays'] : $this->txt('runtime_no_limit'))
+            $tpl->setVariable("MAX_PLAYS", ($limit ? (int) $limit : $this->txt('runtime_no_limit'))
                 . ' ' . $limit_plays_suffix);
             $tpl->setVariable("MAX_PLAYS_TEXT", $this->txt("runtime_max_plays"));
 
-            $tpl->setVariable("CURRENT_PLAYS",(int) $usage->getPlays());
+            $tpl->setVariable("CURRENT_PLAYS",(int) $usageObj->getPlays());
             $tpl->setVariable("CURRENT_PLAYS_TEXT", $this->txt("runtime_plays"));
 
-            $tpl->setVariable("CURRENT_SECONDS", max((int) $usage->getSeconds(), 0));
+            $tpl->setVariable("CURRENT_SECONDS", max((int) $usageObj->getSeconds(), 0));
             $tpl->setVariable("CURRENT_SECONDS_TEXT", $this->txt("runtime_seconds"));
         }
 

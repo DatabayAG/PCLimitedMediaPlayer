@@ -34,10 +34,11 @@ play_with_pause_info#:#Das Abspielen kann durch einen Pausenknopf unterbrochen u
 play_without_pause#:#Pausieren unterbinden
 play_without_pause_info#:#Es gibt keinen Pausenknopf. Wechselt der Nutzer während des Abspielens zu einer anderen Frage und kehrt er zurück, gilt die Wiedergabe als verbraucht.
 limit_plays#:#Maximalzahl der Wiedergaben
-limit_plays_preview#:#(unbegrenzt in der Vorschau)
-limit_plays_user#:#(für Nutzer)
-limit_plays_session#:#(in der Sitzung)
-limit_plays_testpass#:#(im Testlauf)
+limit_plays_preview#:#unbegrenzt in der Vorschau
+limit_plays_user#:#für Nutzer
+limit_plays_session#:#in der Sitzung
+limit_plays_testpass#:#im Testlauf
+limit_plays_adapted#:#(angepasst)
 limit_context#:#Bezug der Zählung
 limit_context_user#:#Alle Wiedergaben eines Nutzers
 limit_context_session#:#Wiedergaben in der Login-Sitzung
