@@ -42,7 +42,7 @@ limit_context_user#:#All Plays of the User
 limit_context_session#:#Plays in the Login Sessioin
 limit_context_testpass#:#Plays in the Test Pass
 runtime_plays#:#Stareted Plays:
-runtime_max_plays#:Maximum Plays:
+runtime_max_plays#:#Maximum Plays:
 runtime_seconds#:#Played Seconds:
 runtime_limit_reached#:#The maximum number of plays is reached.
 runtime_start_first#:#Start the First Play

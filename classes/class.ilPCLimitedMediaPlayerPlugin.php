@@ -89,18 +89,17 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
         global $ilDB;
 
         $query = "SELECT page_id, content FROM page_object "
-            ." WHERE parent_type = ". $ilDB->quote($a_parent_type, 'txt')
-            ." AND lang = ". $ilDB->quote($a_lang, 'txt')
-            ." AND ". $ilDB->in('page_id', $a_page_ids, 'integer')
+            ." WHERE parent_type = ". $ilDB->quote($a_parent_type, 'text')
+            ." AND lang = ". $ilDB->quote($a_lang, 'text')
+            ." AND ". $ilDB->in('page_id', $a_page_ids, false, 'integer')
             ." AND " . $ilDB->like('content', 'text', '%PCLimitedMediaPlayer%', false);
         $result = $ilDB->query($query);
 
         $found = array();
         while ($row = $ilDB->fetchAssoc($result))
         {
-            $dom = new DOMDocument("1.0", "UTF-8");
-            $dom->loadXML($row['content']);
-
+            $domdoc = new DOMDocument("1.0", "UTF-8");
+            $domdoc->loadXML($row['content']);
             $xpath = new DOMXPath($domdoc);
             $pnodes = $xpath->query("//Plugged[@PluginName='PCLimitedMediaPlayer']");
 

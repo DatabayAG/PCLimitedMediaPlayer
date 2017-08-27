@@ -60,7 +60,7 @@
 <#2>
 <?php
 
-    if (!$ilDB->tableExists('copg_pgcp_limply_limits'))
+    if (!$ilDB->tableExists('copg_pgcp_limply_limit'))
     {
         $fields = array(
             'parent_id' => array(
@@ -93,7 +93,7 @@
                 'default' => 0
             )
         );
-        $ilDB->createTable("copg_pgcp_limply_limits", $fields);
-        $ilDB->addPrimaryKey("copg_pgcp_limply_limits", array("parent_id", "page_id", "mob_id", "user_id"));
+        $ilDB->createTable("copg_pgcp_limply_limit", $fields);
+        $ilDB->addPrimaryKey("copg_pgcp_limply_limit", array("parent_id", "page_id", "mob_id", "user_id"));
     }
 ?>

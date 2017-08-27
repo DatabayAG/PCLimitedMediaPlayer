@@ -10,7 +10,7 @@
  * @author Fred Neumann <fred.neumann@ili.fau.de>
  * @version $Id$
  */
-class ilLimitedMediaPlayerLimits
+class ilLimitedMediaPlayerLimit
 {
 	private $parent_id;
 	private $page_id;
@@ -46,7 +46,7 @@ class ilLimitedMediaPlayerLimits
 		// get the stored limit
         if (isset($limit))
         {
-            $this->limits[$this->getLimitKey()] = $imit;
+            $this->limits[$this->getLimitKey()] = $limit;
         }
         else
         {
@@ -154,7 +154,7 @@ class ilLimitedMediaPlayerLimits
 	{
 		global $ilDB;
 		
-        $query = "SELECT * FROM copg_pgcp_limply_limits "
+        $query = "SELECT * FROM copg_pgcp_limply_limit "
         . " WHERE parent_id = " . $ilDB->quote($this->parent_id, 'integer')
         . " AND (page_id = 0 OR page_id = " . $ilDB->quote($this->page_id, 'integer') . ")"
         . " AND (mob_id = 0 OR mob_id = " . $ilDB->quote($this->mob_id, 'integer'). ")"
@@ -190,7 +190,7 @@ class ilLimitedMediaPlayerLimits
 	{
 		global $ilDB;
 		
-        $ilDB->replace('copg_pgcp_limply_limits',
+        $ilDB->replace('copg_pgcp_limply_limit',
             array(
                 'parent_id' => array('integer', $this->parent_id),
                 'page_id' => array('integer', $this->page_id),
@@ -198,7 +198,7 @@ class ilLimitedMediaPlayerLimits
                 'user_id' => array('integer', $this->user_id),
             ),
             array(
-                'limit_plays' => array('integer', $this->limits($this->getLimitKey())),
+                'limit_plays' => array('integer', $this->limits[$this->getLimitKey()]),
             )
         );
 	}
@@ -211,7 +211,7 @@ class ilLimitedMediaPlayerLimits
     {
         global $ilDB;
 
-        $query = "DELETE FROM copg_pgcp_limply_limits "
+        $query = "DELETE FROM copg_pgcp_limply_limit "
             . " WHERE parent_id = " . $ilDB->quote($this->parent_id, 'integer')
             . " AND page_id = " . $ilDB->quote($this->page_id, 'integer')
             . " AND mob_id = " . $ilDB->quote($this->mob_id, 'integer')
@@ -224,19 +224,19 @@ class ilLimitedMediaPlayerLimits
     /**
      * Get the limits defined for a test
      * @param   int   $a_parent_id    obj_id of the test object
-     * @return  ilLimitedMediaPlayerLimits[]
+     * @return  ilLimitedMediaPlayerLimit[]
      */
     public static function getTestLimits($a_parent_id)
     {
         global $ilDB;
 
-        $query = "SELECT * FROM copg_pgcp_limply_limits WHERE parent_id = " . $ilDB->quote($a_parent_id, 'integer');
+        $query = "SELECT * FROM copg_pgcp_limply_limit WHERE parent_id = " . $ilDB->quote($a_parent_id, 'integer');
 
         $res = $ilDB->query($query);
         $limitObjects = array();
         while ($row = $ilDB->fetchAssoc($res))
         {
-            $limitObjects[] = new ilLimitedMediaPlayerLimits($row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
+            $limitObjects[] = new ilLimitedMediaPlayerLimit($row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
         }
 
         return $limitObjects;
