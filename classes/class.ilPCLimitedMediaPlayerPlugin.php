@@ -14,7 +14,7 @@ include_once("./Services/COPage/classes/class.ilPageComponentPlugin.php");
  */
 class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 {
-    const DEBUG = true;
+    const DEBUG = false;
 
 	/**
 	 * Get plugin name 
