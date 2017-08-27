@@ -723,8 +723,18 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $sessionFactory = new ilTestSessionFactory($testObj);
             $sequenceFactory = new ilTestSequenceFactory($ilDB, $lng, $ilPluginAdmin, $testObj);
             $sessionObj = $sessionFactory->getSessionByUserId($ilUser->getId());
-            $sequenceObj = $sequenceFactory->getSequence($sessionObj);
-            $sequenceObj->loadFromDb();
+			if (method_exists('ilTestSequenceFactory', 'getSequence'))
+			{
+				// 5.0
+				$sequenceObj = $sequenceFactory->getSequence($sessionObj);
+			}
+			elseif ((method_exists('ilTestSequenceFactory', 'getSequenceByTestSession')))
+			{
+				// 5.2
+				$sequenceObj = $sequenceFactory->getSequenceByTestSession($sessionObj);
+			}
+
+			$sequenceObj->loadFromDb();
             $sequenceObj->loadQuestions();
 
             $sequence = $_GET["sequence"];
