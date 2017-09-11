@@ -169,7 +169,7 @@ class ilLimitedMediaPlayerGUI
         $volume_url = "player.php?cmd=volume";
 
         $config = array(
-            'type' => substr($this->mime,0, 0) == 'audio' ? 'audio' : 'video',
+            'type' => substr($this->mime,0, 5) == 'audio' ? 'audio' : 'video',
             'mob_id' => $this->mob_id,
             'play_pause' => $this->play_pause,
             'current_plays' => $this->current_plays,
