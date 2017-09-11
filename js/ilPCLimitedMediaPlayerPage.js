@@ -49,8 +49,14 @@ il.PCLimitedMediaPlayerPage = new function() {
         }
     };
 
+    this.preventEvent = function(event)
+    {
+        event.preventDefault();
+        return false;
+    };
 
-	this.playClicked = function(event) {
+
+    this.playClicked = function(event) {
         event.preventDefault();
         var mob_id = $(event.currentTarget).attr('data-id');
 
@@ -70,7 +76,8 @@ il.PCLimitedMediaPlayerPage = new function() {
         event.preventDefault();
         var mob_id = $(event.currentTarget).attr('data-id');
 
-        $('#limplyModal'+mob_id).modal('show');
+        $('#limplyModal'+mob_id).modal({show: true, backdrop: 'static', keyboard: false});
+        $('#limplyModal'+mob_id+' button.close').hide();
         self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').val());
         self.sendAction(mob_id, 'continue', 0);
     };
@@ -153,7 +160,6 @@ il.PCLimitedMediaPlayerPage = new function() {
                 d_modal.modal('hide');
                 break;
         }
-
     }
 
 };
