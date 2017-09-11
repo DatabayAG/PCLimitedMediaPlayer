@@ -211,7 +211,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                     $mediaItem->setPurpose('Fullscreen');
                     $mediaObj->addMediaItem($mediaItem);
                 }
-                @unlink($mediaItem->getLocation());
+                @unlink($mediaObj->getDataDirectory() .'/'. $mediaItem->getLocation());
                 $mediaItem->setLocation($file_name);
                 $mediaItem->setLocationType("LocalFile");
                 $mediaItem->setFormat(ilObjMediaObject::getMimeType($file));
@@ -986,6 +986,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         /** @var ilObjMediaObject $mediaObj */
         if ($mediaObj = $pageMediaObject->getMediaObject())
         {
+        	// create a new media object if it is used on other pages
+			// question may have been duplicated before
             if (count($mediaObj->getUsages(false)) > 1)
             {
                 $mediaObj = $mediaObj->duplicate();
