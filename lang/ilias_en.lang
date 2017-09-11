@@ -21,7 +21,9 @@ medium_file_info#:#Upload here the mdeium that should be played
 medium_startpic#:#Start Picture
 medium_startpic_info#:#The start picture will be shown when the player is stpped or paused.
 medium_height#:#Player Width (Pixels)
+medium_height_info#:#Please set a height to make a video visible.
 medium_width#:#Player Height (Pixels)
+medium_height_info#:#Please set a width to make a video visible.
 play_mode#:#Play Mode
 play_in_modal#:#Play In Modal
 play_in_modal_info#:#The medium is played in a modal that prevents the question from being answered.

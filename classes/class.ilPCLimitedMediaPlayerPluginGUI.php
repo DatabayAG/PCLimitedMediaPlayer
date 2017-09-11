@@ -294,12 +294,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         // width
         $medium_width = new ilNumberInputGUI($this->txt('medium_width'), 'medium_width');
+        $medium_width->setInfo($this->txt('medium_width_info'));
         $medium_width->setSize(5);
         $medium_width->setDecimals(0);
         $form->addItem($medium_width);
 
         // height
         $medium_height = new ilNumberInputGUI($this->txt('medium_height'), 'medium_height');
+        $medium_height->setInfo($this->txt('medium_height_info'));
         $medium_height->setSize(5);
         $medium_height->setDecimals(0);
         $form->addItem($medium_height);

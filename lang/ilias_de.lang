@@ -22,7 +22,9 @@ medium_file_info#:#Mediendatei, die abgespielt werden soll
 medium_startpic#:#Startbild
 medium_startpic_info#:#Startbild, das vor der Wiedergabe angezeigt wird.
 medium_height#:#Player-Höhe (Pixel)
+medium_height_info#:#Geben Sie bei Video eine Höhe an, damit das Video sichtbar ist.
 medium_width#:#Player-Breite (Pixel)
+medium_width_info#:#Geben Sie bei Video eine Breite an, damit das Video sichtbar ist.
 play_mode#:#Abspielart
 play_in_modal#:#In Modal wiedergeben
 play_in_modal_info#:#Die Wiedergabe findet in einem Modal statt. Währenddessen ist die Fragen im Hintergrund nicht bearbeitbar.
