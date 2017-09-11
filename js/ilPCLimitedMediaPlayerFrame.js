@@ -150,8 +150,10 @@ ilPCLimitedMediaPlayerFrame = new function() {
      */
     this.handlePlaying = function()
     {
-        $('#startpic').css('visibility', 'hidden');
-        $('.mejs__container').css('visibility', 'visible');
+        if (data.type === 'video') {
+            $('#startpic').css('visibility', 'hidden');
+            $('.mejs__container').css('visibility', 'visible');
+        }
 
         if (data.current_seconds < 0)
         {
