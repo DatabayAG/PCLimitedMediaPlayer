@@ -55,7 +55,7 @@ il.PCLimitedMediaPlayerPage = new function() {
         var mob_id = $(event.currentTarget).attr('data-id');
 
         $('#limplyModal'+mob_id).modal('show');
-        self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').attr('value'));
+        self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').val());
         self.sendAction(mob_id, 'play', 0);
     };
 
@@ -71,14 +71,14 @@ il.PCLimitedMediaPlayerPage = new function() {
         var mob_id = $(event.currentTarget).attr('data-id');
 
         $('#limplyModal'+mob_id).modal('show');
-        self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').attr('value'));
+        self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').val());
         self.sendAction(mob_id, 'continue', 0);
     };
 
     this.volumeChanged = function(event) {
         event.preventDefault();
         var mob_id = $(event.currentTarget).attr('data-id');
-        self.sendAction(mob_id, 'volume', $(event.currentTarget).attr('value'));
+        self.sendAction(mob_id, 'volume', $(event.currentTarget).val());
     };
 
     /**
