@@ -439,30 +439,35 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 		$params = array();
         $btpl = $this->getPlugin()->getTemplate("tpl.page_block.html");
 
-		$this->setMode($this->getViewMode());
+        /** @var ilPCMediaObject $pgmob */
+        $pgmob = $this->getPageMediaObject($a_properties);
+        if (is_object($pgmob))
+        {
+            /** @var ilObjMediaObject $mob */
+            $mob = $pgmob->getMediaObject();
+        }
+        if (is_object($mob))
+        {
+            /** @var ilMediaItem $item */
+            $item = $mob->getMediaItem('Fullscreen');
+        }
+
+        $this->setMode($this->getViewMode());
         switch ($this->getMode())
         {
             case self::VIEW_PRESENTATION:
             case self::VIEW_PREVIEW:
+                if (!is_object($item))
+                {
+                    break;
+                }
+
                 //
                 // Show the embedded player
                 //
-
                 require_once ('Services/jQuery/classes/class.iljQueryUtil.php');
                 iljQueryUtil::initjQuery();
                 iljQueryUtil::initjQueryUI();
-
-                /** @var ilPCMediaObject $pgmob */
-                $pgmob = $this->getPageMediaObject($a_properties);
-                if (!is_object($pgmob)) break;
-
-                /** @var ilObjMediaObject $mob */
-                $mob = $pgmob->getMediaObject();
-                if (!is_object($mob))  break;
-
-                /** @var ilMediaItem $item */
-                $item = $mob->getMediaItem('Fullscreen');
-                if (!is_object($item)) break;
 
                 // get usage and playing status
                 // adjust the context and limit in preview
@@ -528,12 +533,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 // Show only a representation with meta data
                 //
                 $info = array(
+                    $this->txt('medium_file') => is_object($item) ?  $item->getLocation() : '',
                     $this->txt('limit_plays') => $a_properties['limit_plays'],
                     $this->txt('limit_context') => $this->txt('limit_context_'.$a_properties['limit_context']),
                     $this->txt('play_mode') => $this->txt($a_properties['play_modal'] ? 'play_in_modal' : 'play_on_page'),
                     $this->txt('play_pause') => $a_properties['play_pause'] ?
                         $this->txt('play_with_pause') : $this->txt('play_without_pause')
                 );
+
                 $usage = null;
                 break;
         }
