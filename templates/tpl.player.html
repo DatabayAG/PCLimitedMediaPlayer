@@ -16,6 +16,8 @@
         position: fixed;
         top: 0;
         left: 0;
+        text-align: left;
+        max-width: 100%;
     }
 
     .mejs__container {
@@ -29,6 +31,7 @@
         position: fixed;
         top: 0;
         left: 0;
+        max-width: 100%;
         z-index: 999999;
     }
 
@@ -47,13 +50,13 @@
     <img id="startpic" height="{HEIGHT}" src="{FILE}"/>
 <!-- END startpic -->
 <!-- BEGIN audio -->
- 	<audio id="medium" width="{WIDTH}" height="{HEIGHT}">
+ 	<audio id="medium" height="{HEIGHT}">
 		<source src="{FILE}" type="{MIME}">
 	</audio>
     <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
 <!-- END audio -->
 <!-- BEGIN video -->
-    <video id="medium" width="{WIDTH}" height="{HEIGHT}">
+    <video id="medium" height="{HEIGHT}">
         <source src="{FILE}" type="{MIME}">
     </video>
     <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
