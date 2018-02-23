@@ -97,3 +97,16 @@
         $ilDB->addPrimaryKey("copg_pgcp_limply_limit", array("parent_id", "page_id", "mob_id", "user_id"));
     }
 ?>
+<#3>
+<?php
+    if(!$ilDB->tableColumnExists('copg_pgcp_limply_uses', 'active_id'))
+    {
+    	$ilDB->addTableColumn('copg_pgcp_limply_uses', 'active_id', array(
+    			'type' => 'integer',
+    			'length' => 4,
+    			'notnull' => true,
+    			'default' => -1
+    		)
+        );
+    }
+?>
