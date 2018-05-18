@@ -38,6 +38,10 @@ class ilLimitedMediaPlayerUsage
 	 */
 	private $pass = -1;	
 
+	/**
+	 * @var integer		active_id from the currently saved passes (internally -1 if context is not a testpass or medium is not yet played)
+	 */
+	private $active_id = -1;
 
 	private $parent_id;
 	private $page_id;
@@ -73,9 +77,10 @@ class ilLimitedMediaPlayerUsage
             $active_id = ilObjTest::_getActiveIdOfUser($ilUser->getId(),$test_id);
             $pass = ilObjTest::_getPass($active_id);
 
-            if($pass != $this->pass)
+            if($pass != $this->pass || $this->active_id != $active_id)
             {
                 $this->pass = $pass;
+                $this->active_id = $active_id;
                 $this->plays = 0;
                 $this->seconds = -1;
                 $this->write();
@@ -198,6 +203,7 @@ class ilLimitedMediaPlayerUsage
 				$this->plays = (int) $row['plays'];
                 $this->seconds = (float) $row['seconds'];
 				$this->pass = (int) $row['pass'];
+				$this->active_id = (int) $row['active_id'];
 			}
 		}
     }
@@ -226,7 +232,8 @@ class ilLimitedMediaPlayerUsage
 				array(
 					'plays' => array('integer', $this->plays),
                     'seconds' => array('float', $this->seconds),
-					'pass' => array('integer', $this->pass)
+					'pass' => array('integer', $this->pass),
+					'active_id' => array('integer', $this->active_id),
 				)
 			);	
 		}
