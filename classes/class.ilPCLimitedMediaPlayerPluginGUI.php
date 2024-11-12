@@ -722,6 +722,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     protected function getPageId()
     {
+        global $DIC;
+        $refinery = $DIC->refinery();
         global $ilCtrl, $ilUser, $ilDB, $ilPluginAdmin, $lng;
 
         if ($this->getViewMode() == self::VIEW_PRESENTATION)
@@ -730,7 +732,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             require_once('Modules/Test/classes/class.ilTestSequenceFactory.php');
             $testObj = new ilObjTest($_GET['ref_id']);
             $sessionFactory = new ilTestSessionFactory($testObj);
-            $sequenceFactory = new ilTestSequenceFactory($ilDB, $lng, $ilPluginAdmin, $testObj);
+            $sequenceFactory = new ilTestSequenceFactory($ilDB, $lng, $refinery, $ilPluginAdmin, $testObj);
             $sessionObj = $sessionFactory->getSessionByUserId($ilUser->getId());
 			if (method_exists('ilTestSequenceFactory', 'getSequence'))
 			{
