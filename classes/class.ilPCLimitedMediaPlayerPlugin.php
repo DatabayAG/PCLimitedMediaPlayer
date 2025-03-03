@@ -4,75 +4,40 @@
  * GPLv3, see docs/LICENSE
  */
 
-include_once("./Services/COPage/classes/class.ilPageComponentPlugin.php");
- 
 /**
  * Page Component Limited Media Player plugin
- *
- * @author Fred Neumann <fred.neumann@fau.de>
- * @version $Id$
  */
 class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 {
     const DEBUG = false;
 
-	/**
-	 * Get plugin name 
-	 *
-	 * @return string
-	 */
-	function getPluginName()
-	{
-		return "PCLimitedMediaPlayer";
-	}
-
-    /**
-     * Get the debugging mode
-     * @return bool
-     */
 	function getDebug()
     {
         return self::DEBUG;
     }
 
-	/**
-	 * Get plugin name 
-	 *
-	 * @return string
-	 */
-	function isValidParentType($a_parent_type)
+	function isValidParentType(string $a_type): bool
 	{
-		if (in_array($a_parent_type, array('qpl')))
-		{
-			return true;
-		}
-		return false;
+		return in_array($a_type, ['qpl']);
 	}
-	
-	/**
-	 * Get Javascript files
-	 */
-	function getJavascriptFiles($a_mode = null)
+
+	function getJavascriptFiles(string $a_mode): array
 	{
-		return array('js/ilPCLimitedMediaPlayerPage.js');
+		return ['js/ilPCLimitedMediaPlayerPage.js'];
 	}
-	
-	/**
-	 * Get css files
-	 */
-	function getCssFiles($a_mode = null)
+
+	function getCssFiles(string $a_mode): array
 	{
-        return array();
+        return [];
 	}
 
 
     /**
-     * Get the URL for the player script
-     * @return string
+     * Get the URL of the player script
      */
-	public function getPlayerUrl()
+	public function getPlayerUrl(): string
     {
-        return $this->getDirectory().'/player.php';
+        return $this->getDirectory() . '/player.php';
     }
 
     /**

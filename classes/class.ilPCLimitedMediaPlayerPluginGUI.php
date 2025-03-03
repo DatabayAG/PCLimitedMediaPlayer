@@ -25,7 +25,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
 
     /** @var ilPCLimitedMediaPlayerPlugin $plugin */
-    protected $plugin;
+    protected ilPageComponentPlugin $plugin;
 
     /** @var string $errorMessage */
     protected $errorMessage;
@@ -46,7 +46,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 	 * @param
 	 * @return
 	 */
-	public function executeCommand()
+	public function executeCommand(): void
 	{
 		global $ilCtrl;
 		
@@ -69,7 +69,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 	/**
 	 * Show the creation form
 	 */
-	public function insert()
+	public function insert(): void
 	{
 		global $tpl;
 		
@@ -80,7 +80,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 	/**
 	 * Save the new element
 	 */
-	public function create()
+	public function create(): void
 	{
 		global $tpl, $lng, $ilCtrl;
 	
@@ -104,13 +104,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 	/**
 	 * Show the edit form
 	 */
-	public function edit()
+	public function edit(): void
 	{
 		global $tpl;
 		
 		$this->setTabs("edit");
         $form = $this->initForm();
-		$tpl->setContent($html . $form->getHTML());
+		$tpl->setContent($form->getHTML());
 	}
 	
 	/**
@@ -432,7 +432,11 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 	 * @param string    page mode (edit, presentation, print, preview, offline)
 	 * @return string   html code
 	 */
-	public function getElementHTML($a_mode, array $a_properties, $a_plugin_version)
+	public function getElementHTML(
+        string $a_mode,
+        array $a_properties,
+        string $plugin_version
+    ): string
 	{
 	    /** @var ilTemplate $tpl */
 		global $tpl, $ilCtrl, $ilUser;

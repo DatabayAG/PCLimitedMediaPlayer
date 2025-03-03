@@ -7,19 +7,10 @@
  * @version $Id$
  */
 
-// alphanumerical ID of the plugin; never change this
 $id = "limply";
 
-// code version; must be changed for all code changes
-$version = "1.0.3";
-
-// ilias min and max version; must always reflect the versions that should
-// run with the plugin
-$ilias_min_version = "5.0.0";
-$ilias_max_version = "5.4.999";
-
-// optional, but useful: Add one or more responsible persons and a contact email
+$version = "2.0.0";
+$ilias_min_version = "8.18";
+$ilias_max_version = "8.999";
 $responsible = "Fred Neumann";
-$responsible_mail = "fred.neumann";
-
-?>
+$responsible_mail = "fneumann@databay.de";
