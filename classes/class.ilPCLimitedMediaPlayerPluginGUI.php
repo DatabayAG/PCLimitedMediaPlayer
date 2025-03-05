@@ -4,8 +4,10 @@
  * GPLv3, see docs/LICENSE
  */
 
-include_once("./Services/COPage/classes/class.ilPageComponentPluginGUI.php");
-include_once("./Services/MediaObjects/classes/class.ilObjMediaObject.php");
+use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
+use ILIAS\Plugin\LimitedMediaPlayer\Status;
+use ILIAS\Plugin\LimitedMediaPlayer\Usage;
+use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
 
 /**
  * Page Component Limited Media Player plugin GUI
@@ -40,7 +42,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     private $pageMediaObj;
 
 
-	/**
+    /**
 	 * Execute command
 	 *
 	 * @param
@@ -465,6 +467,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             case self::VIEW_PREVIEW:
                 if (!is_object($item))
                 {
+                    $usage = null;
                     break;
                 }
 
@@ -477,24 +480,24 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
                 // get usage and playing status
                 // adjust the context and limit in preview
-                require_once (__DIR__ . "/class.ilLimitedMediaPlayerUsage.php");
-                require_once (__DIR__ . "/class.ilLimitedMediaPlayerLimit.php");
                 if ($this->getViewMode() == self::VIEW_PREVIEW)
                 {
                     $limit_plays = 0;
-                    $limit_context = ilLimitedMediaPlayerUsage::CONTEXT_SESSION;
+                    $limit_context = LimitContext::from(LimitContext::SESSION);
                 }
                 else
                 {
                     $limits = new ilLimitedMediaPlayerLimit($this->getParentId(), $this->getPageId(), $mob->getId(), $ilUser->getId());
-                    $limit_plays = $limits->getEffectiveLimit($a_properties['limit_plays']);
-                    $limit_context = $a_properties['limit_context'];
+                    $limit_plays = (int) $limits->getEffectiveLimit($a_properties['limit_plays']);
+                    $limit_context = LimitContext::from($a_properties['limit_context']);
                 }
 
                 // get the usage and status for the context
-                $usage = new ilLimitedMediaPlayerUsage($this->getParentId(), $this->getPageId(), $mob->getId(), $ilUser->getId(), $limit_context);
-                $usage->handlePageView($a_properties['play_pause']);
-                $status = $usage->getStatus((int) $limit_plays, (bool) $a_properties['play_pause']);
+                $usage_repo = $this->plugin->factory()->usageRepo($this->getParentId(), $this->getPageId(), $mob->getId(), $limit_context);
+                $usage = $usage_repo->get( $ilUser->getId());
+                $usage->setPageView((int) $a_properties['play_pause']);
+
+                $status = $usage->getStatus($limit_plays, (bool) $a_properties['play_pause']);
 
                 if ($a_properties['play_modal'])
                 {
@@ -535,6 +538,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             case self::VIEW_EDIT:
             case self::VIEW_PRINT:
             case self::VIEW_OFFLINE:
+            default:
                 //
                 // Show only a representation with meta data
                 //
@@ -552,7 +556,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         // add debugging information
-        if (ilPCLimitedMediaPlayerPlugin::DEBUG)
+        if ($this->getPlugin()->getDebug())
         {
             $info = array_merge($info, $this->getDebugProperties());
         }
@@ -574,7 +578,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      * @param int               $limit_plays
      * @param string            $limit_context
      */
-	protected function getElementPlayerHTML($mob, $item, $a_properties, $limit_plays, $limit_context)
+	protected function getElementPlayerHTML($mob, $item, $a_properties, $limit_plays, LimitContext $limit_context)
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_player.html");
 
@@ -590,7 +594,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             'height' => (int) $a_properties['medium_height'],
             'width' => (int) $a_properties['medium_width'],
             'play_pause' => (bool) $a_properties['play_pause'],
-            'limit_context' => (string) $limit_context,
+            'limit_context' => $limit_context->value(),
             'limit_plays' => (int) $limit_plays,
         );
         foreach ($params as $name => $value)
@@ -606,14 +610,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     /**
      * @param ilObjMediaObject          $mob
-     * @param ilLimitedMediaPlayerUsage $usage
-     * @param string                    $status
      * @param array                     $controls ('play', 'pause', 'continue', 'volume')
      * @param bool
      */
-    protected function getElementControlsHTML($mob, $usage, $status, $controls)
+    protected function getElementControlsHTML($mob, Usage $usage, Status $status, $controls)
     {
-        if ($status == ilLimitedMediaPlayerUsage::STATUS_LIMIT)
+        $preferences_repo = $this->plugin->factory()->preferencesRepo();
+
+        if ($status->value() == Status::LIMIT)
         {
             return '';
         }
@@ -624,21 +628,21 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         {
             $tpl->setVariable('ID_PLAY', $mob->getId());
             $tpl->setVariable('TXT_PLAY', $this->txt("runtime_play"));
-            $tpl->setVariable('STATUS_PLAY', $status == ilLimitedMediaPlayerUsage::STATUS_START ? '' : 'hidden');
+            $tpl->setVariable('STATUS_PLAY', $status->value() == Status::START ? '' : 'hidden');
         }
 
         if (in_array('pause', $controls))
         {
             $tpl->setVariable('ID_PAUSE', $mob->getId());
             $tpl->setVariable('TXT_PAUSE', $this->txt("runtime_pause"));
-            $tpl->setVariable('STATUS_PAUSE', $status == ilLimitedMediaPlayerUsage::STATUS_PLAY ? '' : 'hidden');
+            $tpl->setVariable('STATUS_PAUSE', $status->value() == Status::PLAY ? '' : 'hidden');
         }
 
         if (in_array('continue', $controls))
         {
             $tpl->setVariable('ID_CONTINUE', $mob->getId());
             $tpl->setVariable('TXT_CONTINUE', $this->txt("runtime_continue"));
-            $tpl->setVariable('STATUS_CONTINUE', $status == ilLimitedMediaPlayerUsage::STATUS_PAUSE ? '' : 'hidden');
+            $tpl->setVariable('STATUS_CONTINUE', $status->value() == Status::PAUSE ? '' : 'hidden');
         }
 
         if (in_array('volume', $controls))
@@ -646,7 +650,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $tpl->setVariable('ID_VOLUME', $mob->getId());
             $tpl->setVariable('ICON_VOLUME', ilUtil::getImagePath('icon_mob.svg'));
             $tpl->setVariable('TXT_VOLUME', $this->txt('runtime_volume'));
-            $tpl->setVariable('VALUE_VOLUME', $usage->getVolume() * 100);
+            $tpl->setVariable('VALUE_VOLUME', $preferences_repo->getVolume() * 100);
         }
 
         return $tpl->get();
@@ -656,15 +660,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      * get the HTML code of the emelent information
      * @param array                         $a_properties
      * @param array                         $info (text => value)
-     * @param ilLimitedMediaPlayerUsage     $usageObj
      * @param ilLimitedMediaPlayerLimit     $limitObj
      */
-    protected function getElementInfoHTML($a_properties, $info = array(), $usageObj = null, $limitObj = null)
+    protected function getElementInfoHTML($a_properties, $info = array(), ?Usage $usage = null, $limitObj = null)
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_info.html");
 
         $limit = $a_properties['limit_plays'];
-        if (isset($usageObj))
+        if (isset($usage))
         {
             if ($this->getViewMode() == self::VIEW_PREVIEW)
             {
@@ -688,10 +691,10 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 . ' ' . $limit_plays_suffix);
             $tpl->setVariable("MAX_PLAYS_TEXT", $this->txt("runtime_max_plays"));
 
-            $tpl->setVariable("CURRENT_PLAYS",(int) $usageObj->getPlays());
+            $tpl->setVariable("CURRENT_PLAYS",(int) $usage->getPlays());
             $tpl->setVariable("CURRENT_PLAYS_TEXT", $this->txt("runtime_plays"));
 
-            $tpl->setVariable("CURRENT_SECONDS", max((int) $usageObj->getSeconds(), 0));
+            $tpl->setVariable("CURRENT_SECONDS", max((int) $usage->getSeconds(), 0));
             $tpl->setVariable("CURRENT_SECONDS_TEXT", $this->txt("runtime_seconds"));
         }
 

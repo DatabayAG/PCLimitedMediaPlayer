@@ -9,7 +9,7 @@ use DOMXPath;
 use DOMElement;
 use ilDBInterface;
 
-class MediaRepo
+class MediumRepo
 {
     private ilDBInterface $db;
 
@@ -29,10 +29,10 @@ class MediaRepo
      *
      * @return  Medium[]
      */
-    public function findLimitedMedia(array $a_page_ids, string $a_parent_type = 'qpl', string $a_lang = '-', ?int $a_mob_id = null): array
+    public function findLimitedMedia(array $a_page_ids, ParentType $a_parent_type, string $a_lang = '-', ?int $a_mob_id = null): array
     {
         $query = "SELECT page_id, content FROM page_object "
-            . " WHERE parent_type = " . $this->db->quote($a_parent_type, 'text')
+            . " WHERE parent_type = " . $this->db->quote($a_parent_type->value(), 'text')
             . " AND lang = " . $this->db->quote($a_lang, 'text')
             . " AND " . $this->db->in('page_id', $a_page_ids, false, 'integer')
             . " AND " . $this->db->like('content', 'text', '%PCLimitedMediaPlayer%', false);
@@ -65,7 +65,7 @@ class MediaRepo
                         $found[] = new Medium(
                             (int) $row['page_id'] ?? 0,
                             $mob_id,
-                            (string)  $properties['medium_title'] ?? '',
+                            (string) $properties['medium_title'] ?? '',
                             (int) $properties['limit_plays'] ?? 0
                         );
                     }

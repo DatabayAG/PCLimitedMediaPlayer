@@ -110,3 +110,32 @@
         );
     }
 ?>
+<#4>
+<?php
+    $ilDB->modifyTableColumn('copg_pgcp_limply_uses', 'seconds', array(
+        'type' => 'float',
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_uses SET seconds = NULL WHERE seconds = -1');
+?>
+<#5>
+<?php
+    $ilDB->modifyTableColumn('copg_pgcp_limply_uses', 'pass', array(
+        'type' => 'integer',
+        'length' => 4,
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_uses SET pass = NULL WHERE pass = -1');
+?>
+<#6>
+<?php
+    $ilDB->modifyTableColumn('copg_pgcp_limply_uses', 'active_id', array(
+        'type' => 'integer',
+        'length' => 4,
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_uses SET active_id = NULL WHERE active_id = -1');
+?>

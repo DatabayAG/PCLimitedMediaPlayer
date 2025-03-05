@@ -24,7 +24,7 @@ ilPCLimitedMediaPlayerFrame = new function() {
         mob_id: 0,
         play_pause: 0,
         current_plays: 0,
-        current_seconds: -1,
+        current_seconds: null,
         status: 'limit',
         volume: 0.5,
         update_url: '',
@@ -196,7 +196,7 @@ ilPCLimitedMediaPlayerFrame = new function() {
         $('.mejs__container').css('visibility', 'hidden');
 
         self.stopProgress();
-        data.current_seconds = -1;
+        data.current_seconds = null;
         self.updateDisplay();
         self.sendState();
     };

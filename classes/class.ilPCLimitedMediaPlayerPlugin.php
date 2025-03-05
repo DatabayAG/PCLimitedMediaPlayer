@@ -4,37 +4,52 @@
  * GPLv3, see docs/LICENSE
  */
 
+use ILIAS\Plugin\LimitedMediaPlayer\ParentType;
+use ILIAS\Plugin\LimitedMediaPlayer\Factory;
+
 /**
  * Page Component Limited Media Player plugin
  */
 class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 {
-    const DEBUG = false;
+    public const ID = 'limply';
 
-	function getDebug()
-    {
-        return self::DEBUG;
-    }
+    /**
+     * Activate to show debugging info in the page component
+     */
+    private const DEBUG = false;
 
-	function isValidParentType(string $a_type): bool
+    private ?Factory $factory = null;
+
+    public function isValidParentType(string $a_type): bool
 	{
-		return in_array($a_type, ['qpl']);
+		return in_array($a_type, ParentType::CASES);
 	}
 
-	function getJavascriptFiles(string $a_mode): array
+	public function getJavascriptFiles(string $a_mode): array
 	{
 		return ['js/ilPCLimitedMediaPlayerPage.js'];
 	}
 
-	function getCssFiles(string $a_mode): array
+    public function getCssFiles(string $a_mode): array
 	{
         return [];
 	}
 
+    public function factory(): Factory
+    {
+        return $this->factory ?? new Factory($this->db);
+    }
+
+    public function getDebug(): bool
+    {
+        return self::DEBUG;
+    }
+
     /**
-     * Get the URL of the player script
+     * This URL is used for the iframe showing the player
      */
-	public function getPlayerUrl(): string
+    public function getPlayerUrl(): string
     {
         return $this->getDirectory() . '/player.php';
     }

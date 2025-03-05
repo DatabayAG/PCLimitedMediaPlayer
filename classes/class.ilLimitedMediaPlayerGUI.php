@@ -4,15 +4,21 @@
  * GPLv3, see docs/LICENSE
  */
 
+use ILIAS\Plugin\LimitedMediaPlayer\Status;
+use ILIAS\Plugin\LimitedMediaPlayer\Usage;
+use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
+use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
+
+
 /**
- * GUI class for limited media player.
- *
- * @author Fred Neumann <fred.neumann@fau.de>
- * @version $Id$
+ * GUI class for showing the limited media player.
  */
 class ilLimitedMediaPlayerGUI
 {
-    protected $plugin;
+    private ilPCLimitedMediaPlayerPlugin $plugin;
+    private UsageRepo $usage_repo;
+    private PreferencesRepo $preferences_repo;
 
     /**
      * @var string  Path to the mediaelement player
@@ -20,7 +26,7 @@ class ilLimitedMediaPlayerGUI
     private $mejs_path = "lib/mediaelement-4.1.3";
 
 	/**
-	 * @var parameters stored with the limited media object, added to the request
+	 * Parameters stored with the limited media object, added to the request
 	 */
 	private $parent_id;
 	private $page_id;
@@ -35,13 +41,13 @@ class ilLimitedMediaPlayerGUI
 	private $play_pause;
 
 	/**
-	 * @var internal status variables 
+	 * Internal status variables
 	 */
-	private $usage = null;
-	private $current_plays = 0;
-    private $current_seconds = -1;
-    private $status;
-    private $volume;
+	private Usage $usage;
+    private Status $status;
+	private int $current_plays = 0;
+    private ?string $current_seconds = null;
+    private float $volume;
 
 
 	/**
@@ -51,12 +57,10 @@ class ilLimitedMediaPlayerGUI
 	 */
 	function __construct()
 	{
-		global $tpl, $lng, $ilUser;
+        global $DIC;
 
-        require_once (__DIR__ . "/class.ilPCLimitedMediaPlayerPlugin.php");
-        require_once (__DIR__ . "/class.ilLimitedMediaPlayerUsage.php");
+		$this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
 
-		$this->plugin = new ilPCLimitedMediaPlayerPlugin();
 
 		$this->parent_id = (int) $_GET["parent_id"];
 		$this->page_id = (int) $_GET["page_id"];
@@ -70,8 +74,10 @@ class ilLimitedMediaPlayerGUI
 		$this->limit_context = (string) $_GET["limit_context"];
 		$this->limit_plays = (int) $_GET["limit_plays"];
 
-		// get the stored usage
-		$this->usage = new ilLimitedMediaPlayerUsage($this->parent_id, $this->page_id, $this->mob_id, $ilUser->getId(), $this->limit_context);
+        $this->usage_repo = $this->plugin->factory()->usageRepo($this->parent_id, $this->page_id, $this->mob_id, LimitContext::from($this->limit_context));
+        $this->preferences_repo = $this->plugin->factory()->preferencesRepo();
+
+        $this->usage = $this->usage_repo->get($DIC->user()->getId());
 	}
 
 	
@@ -85,11 +91,11 @@ class ilLimitedMediaPlayerGUI
 	    switch ($_GET['cmd'])
         {
             case 'show':
-                $this->usage->handlePageView($this->play_pause);
+                $this->usage->setPageView($this->play_pause);
                 $this->current_plays = (int) $this->usage->getPlays();
                 $this->current_seconds = (int) $this->usage->getSeconds();
-                $this->status = (string) $this->usage->getStatus((int) $this->limit_plays, (bool) $this->play_pause);
-                $this->volume = (float) $this->usage->getVolume();
+                $this->status = $this->usage->getStatus($this->limit_plays, $this->play_pause);
+                $this->volume = $this->preferences_repo->getVolume();
 
                 // show a page with the embedded player
                 $this->showPlayer();
@@ -153,7 +159,7 @@ class ilLimitedMediaPlayerGUI
         $tpl->parseCurrentBlock();
 
         // show only startpic if limit is reached
-        if ($this->status == ilLimitedMediaPlayerUsage::STATUS_LIMIT)
+        if ($this->status->value() == Status::LIMIT)
         {
             $tpl->show();
             return;
@@ -197,14 +203,17 @@ class ilLimitedMediaPlayerGUI
 		$tpl->show();
 	}
 
-
     /**
-     * Update the usage data of the currently played medium
-     * This is called by ajax
+     * Update the usage data of the currently played medium (called by ajax)
      */
 	protected function updateUsage()
     {
-        $this->usage->updateUsage($_POST['current_plays'], $_POST['current_seconds']);
+        $plays = $_POST['current_plays'] ?? 0;
+        $seconds = $_POST['current_seconds'] ?? null;
+
+        $this->usage->setProgress((int) $plays, isset($seconds) ? (float) $seconds : null);
+        $this->usage_repo->save($this->usage);
+
         echo json_encode(array(
             'status' => (string) $this->usage->getStatus($this->limit_plays, false),
             'seconds' => (float) $this->usage->getSeconds(),
@@ -214,12 +223,11 @@ class ilLimitedMediaPlayerGUI
     }
 
     /**
-     * Update the stored player volume
-     * This is called by ajax
+     * Update the stored player volume (called by ajax)
      */
     protected function updateVolume()
     {
-        $this->usage->updateVolume($_POST['volume']);
+        $this->preferences_repo->updateVolume((float) ($_POST['volume'] ?? 0.5));
         echo json_encode(true);
     }
 }
