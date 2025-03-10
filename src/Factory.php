@@ -28,6 +28,13 @@ class Factory
             new UsageRepo($this->db, $parent_id, $page_id, $mob_id, $limit_context);
     }
 
+    public function LimitRepo(
+        int $parent_id
+    ) {
+        return $this->instances[LimitRepo::class][$parent_id] ??
+            new LimitRepo($this->db, $parent_id);
+    }
+
     public function preferencesRepo()
     {
         return $this->instances[PreferencesRepo::class] = new PreferencesRepo();

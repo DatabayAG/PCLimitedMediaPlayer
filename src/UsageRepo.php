@@ -108,7 +108,7 @@ class UsageRepo
 
 
     /**
-     * Change the usage if the status of hte context has changed
+     * Change the usage if the status of the context has changed
      * Plays and seconds should be reset if a new test pass has started
      */
     private function changeByContext(Usage $usage): Usage

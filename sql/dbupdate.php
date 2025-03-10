@@ -112,6 +112,7 @@
 ?>
 <#4>
 <?php
+    // version 2: use null to indicate 'not played'
     $ilDB->modifyTableColumn('copg_pgcp_limply_uses', 'seconds', array(
         'type' => 'float',
         'notnull' => false,
@@ -121,6 +122,7 @@
 ?>
 <#5>
 <?php
+    // version 2: use null for missing pass
     $ilDB->modifyTableColumn('copg_pgcp_limply_uses', 'pass', array(
         'type' => 'integer',
         'length' => 4,
@@ -131,6 +133,7 @@
 ?>
 <#6>
 <?php
+    // version 2: use null for missing active_id
     $ilDB->modifyTableColumn('copg_pgcp_limply_uses', 'active_id', array(
         'type' => 'integer',
         'length' => 4,
@@ -138,4 +141,48 @@
         'default' => null
     ));
     $ilDB->manipulate('UPDATE copg_pgcp_limply_uses SET active_id = NULL WHERE active_id = -1');
+?>
+<#7>
+<?php
+    // version 2: use null for missing page_id
+    $ilDB->modifyTableColumn('copg_pgcp_limply_limit', 'page_id', array(
+        'type' => 'integer',
+        'length' => 4,
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_limit SET page_id = NULL WHERE page_id = 0');
+?>
+<#8>
+<?php
+    // version 2: use null for missing mob_id
+    $ilDB->modifyTableColumn('copg_pgcp_limply_limit', 'mob_id', array(
+        'type' => 'integer',
+        'length' => 4,
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_limit SET mob_id = NULL WHERE mob_id = 0');
+?>
+<#9>
+<?php
+    // version 2: use null for missing user_id
+    $ilDB->modifyTableColumn('copg_pgcp_limply_limit', 'user_id', array(
+        'type' => 'integer',
+        'length' => 4,
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_limit SET user_id = NULL WHERE user_id = 0');
+?>
+<#10>
+<?php
+    // version 2: use null ti indicate unlimited plays
+    $ilDB->modifyTableColumn('copg_pgcp_limply_limit', 'limit_plays', array(
+        'type' => 'integer',
+        'length' => 4,
+        'notnull' => false,
+        'default' => null
+    ));
+    $ilDB->manipulate('UPDATE copg_pgcp_limply_limit SET limit_plays = NULL WHERE limit_plays = 0');
 ?>

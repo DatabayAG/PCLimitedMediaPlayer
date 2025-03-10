@@ -76,14 +76,6 @@ class ilLimitedMediaPlayerLimit
         }
     }
 
-    /**
-     * Set the limit that is defined for the given user and medium
-     * @param   int    $a_limit
-     */
-    public function setLimit($a_limit = null)
-    {
-        $this->limits[$this->getLimitKey()] = $a_limit;
-    }
 
 
     /**

@@ -8,6 +8,7 @@ use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
 use ILIAS\Plugin\LimitedMediaPlayer\Status;
 use ILIAS\Plugin\LimitedMediaPlayer\Usage;
 use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\Limit;
 
 /**
  * Page Component Limited Media Player plugin GUI
@@ -443,7 +444,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 	    /** @var ilTemplate $tpl */
 		global $tpl, $ilCtrl, $ilUser;
 
-		$info = array();
+        $info = array();
 		$params = array();
         $btpl = $this->getPlugin()->getTemplate("tpl.page_block.html");
 
@@ -459,6 +460,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             /** @var ilMediaItem $item */
             $item = $mob->getMediaItem('Fullscreen');
         }
+
+        $limit = new Limit($this->getParentId(), $this->getPageId(), $mob->getId(), $ilUser->getId(), $a_properties['limit_plays'] ?? null, true);
 
         $this->setMode($this->getViewMode());
         switch ($this->getMode())
@@ -482,13 +485,12 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 // adjust the context and limit in preview
                 if ($this->getViewMode() == self::VIEW_PREVIEW)
                 {
-                    $limit_plays = 0;
+                    $limit = $limit->setLimit(null);
                     $limit_context = LimitContext::from(LimitContext::SESSION);
                 }
                 else
                 {
-                    $limits = new ilLimitedMediaPlayerLimit($this->getParentId(), $this->getPageId(), $mob->getId(), $ilUser->getId());
-                    $limit_plays = (int) $limits->getEffectiveLimit($a_properties['limit_plays']);
+                    $limit = $this->plugin->factory()->LimitRepo($this->getParentId())->effective($limit);
                     $limit_context = LimitContext::from($a_properties['limit_context']);
                 }
 
@@ -497,13 +499,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 $usage = $usage_repo->get( $ilUser->getId());
                 $usage->setPageView((int) $a_properties['play_pause']);
 
-                $status = $usage->getStatus($limit_plays, (bool) $a_properties['play_pause']);
+                $status = $usage->getStatus($limit->getLimit(), (bool) $a_properties['play_pause']);
 
                 if ($a_properties['play_modal'])
                 {
                     // show the player and pause/volume in a modal
                     // open the modal by play or continue
-                    $html = $this->getElementPlayerHTML($mob, $item, $a_properties, $limit_plays, $limit_context);
+                    $html = $this->getElementPlayerHTML($mob, $item, $a_properties, $limit, $limit_context);
                     $controls = ($a_properties['play_pause'] ? array('pause', 'volume') : array('volume'));
                     $html .= $this->getElementControlsHTML($mob, $usage, $status, $controls);
 
@@ -521,7 +523,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 else
                 {
                     // show the player and all controls embedded
-                    $btpl->setVariable('PLAYER', $this->getElementPlayerHTML($mob, $item, $a_properties, $limit_plays, $limit_context));
+                    $btpl->setVariable('PLAYER', $this->getElementPlayerHTML($mob, $item, $a_properties, $limit, $limit_context));
 
                     $controls = $a_properties['play_pause'] ? array('play','pause','continue','volume') :  array('play','volume');
                     $btpl->setVariable('CONTROLS', $this->getElementControlsHTML($mob, $usage, $status, $controls));
@@ -562,7 +564,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         // show info block
-        $btpl->setVariable('INFO', $this->getElementInfoHTML($a_properties, $info, $usage, $limits));
+        $btpl->setVariable('INFO', $this->getElementInfoHTML($a_properties, $limit, $usage, $info));
 
         // always show the title
         $btpl->setCurrentBlock('title');
@@ -571,14 +573,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         return $btpl->get();
 	}
 
-    /**
-     * @param ilObjMediaObject  $mob
-     * @param ilMediaItem       $item
-     * @param array             $a_properties
-     * @param int               $limit_plays
-     * @param string            $limit_context
-     */
-	protected function getElementPlayerHTML($mob, $item, $a_properties, $limit_plays, LimitContext $limit_context)
+	protected function getElementPlayerHTML(ilObjMediaObject $mob, ilMediaItem $item, array $a_properties, Limit $limit, LimitContext $limit_context): string
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_player.html");
 
@@ -595,7 +590,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             'width' => (int) $a_properties['medium_width'],
             'play_pause' => (bool) $a_properties['play_pause'],
             'limit_context' => $limit_context->value(),
-            'limit_plays' => (int) $limit_plays,
+            'limit_plays' => (int) $limit->getLimit(),
         );
         foreach ($params as $name => $value)
         {
@@ -609,11 +604,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     }
 
     /**
-     * @param ilObjMediaObject          $mob
      * @param array                     $controls ('play', 'pause', 'continue', 'volume')
-     * @param bool
      */
-    protected function getElementControlsHTML($mob, Usage $usage, Status $status, $controls)
+    protected function getElementControlsHTML(ilObjMediaObject $mob, Usage $usage, Status $status, array $controls): string
     {
         $preferences_repo = $this->plugin->factory()->preferencesRepo();
 
@@ -657,16 +650,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     }
 
     /**
-     * get the HTML code of the emelent information
-     * @param array                         $a_properties
+     * get the HTML code of the element information
      * @param array                         $info (text => value)
-     * @param ilLimitedMediaPlayerLimit     $limitObj
      */
-    protected function getElementInfoHTML($a_properties, $info = array(), ?Usage $usage = null, $limitObj = null)
+    protected function getElementInfoHTML($a_properties, Limit $limit, ?Usage $usage = null, $info = [])
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_info.html");
 
-        $limit = $a_properties['limit_plays'];
         if (isset($usage))
         {
             if ($this->getViewMode() == self::VIEW_PREVIEW)
@@ -677,17 +667,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             {
                 $limit_plays_suffix = $this->txt('limit_plays_' . $a_properties['limit_context']);
 
-                if (isset($limitObj))
+                if (!$limit->isDefault())
                 {
-                    $limit = $limitObj->getEffectiveLimit($a_properties['limit_plays']);
-                    if ($limit != $a_properties['limit_plays'])
-                    {
-                        $limit_plays_suffix .= ' ' . $this->txt('limit_plays_adapted');
-                    }
+                    $limit_plays_suffix .= ' ' . $this->txt('limit_plays_adapted');
                 }
             }
 
-            $tpl->setVariable("MAX_PLAYS", ($limit ? (int) $limit : $this->txt('runtime_no_limit'))
+            $tpl->setVariable("MAX_PLAYS", ($limit->getLimit() ?? $this->txt('runtime_no_limit'))
                 . ' ' . $limit_plays_suffix);
             $tpl->setVariable("MAX_PLAYS_TEXT", $this->txt("runtime_max_plays"));
 
