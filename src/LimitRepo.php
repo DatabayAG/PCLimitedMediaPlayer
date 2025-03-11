@@ -43,7 +43,7 @@ class LimitRepo
      */
     public function effective(Limit $default): Limit
     {
-        $query = "SELECT * FROM ". self::TABLE . " WHERE "
+        $query = "SELECT * FROM " . self::TABLE . " WHERE "
             . implode(' AND ', [
                 $this->strict('parent_id', $this->parent_id),
                 $this->lax('page_id', $default->getPageId()),
@@ -66,7 +66,7 @@ class LimitRepo
 
     public function delete(Limit $limit): void
     {
-        $query = "DELETE FROM ". self::TABLE . " WHERE "
+        $query = "DELETE FROM " . self::TABLE . " WHERE "
         . implode(' AND ', [
             $this->strict('parent_id', $limit->getParentId()),
             $this->strict('page_id', $limit->getPageId()),
@@ -79,12 +79,15 @@ class LimitRepo
 
     public function save(Limit $limit): void
     {
-        $this->db->replace(self::TABLE, [
+        $this->db->replace(
+            self::TABLE,
+            [
                 'parent_id' => ['integer', $this->parent_id],
                 'page_id' => ['integer', $limit->getPageId()],
                 'mob_id' => ['integer', $limit->getMobId()],
                 'user_id' => ['integer', $limit->getUserId()],
-            ], [
+            ],
+            [
                 'limit_plays' => ['integer', $limit->getLimit()],
             ]
         );

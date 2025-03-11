@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) 2017 Institut fuer Lern-Innovation, Friedrich-Alexander-Universitaet Erlangen-Nuernberg
  * GPLv3, see docs/LICENSE
@@ -22,19 +23,19 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
     private ?Factory $factory = null;
 
     public function isValidParentType(string $a_type): bool
-	{
-		return in_array($a_type, ParentType::CASES);
-	}
+    {
+        return in_array($a_type, ParentType::CASES);
+    }
 
-	public function getJavascriptFiles(string $a_mode): array
-	{
-		return ['js/ilPCLimitedMediaPlayerPage.js'];
-	}
+    public function getJavascriptFiles(string $a_mode): array
+    {
+        return ['js/ilPCLimitedMediaPlayerPage.js'];
+    }
 
     public function getCssFiles(string $a_mode): array
-	{
+    {
         return [];
-	}
+    }
 
     public function factory(): Factory
     {

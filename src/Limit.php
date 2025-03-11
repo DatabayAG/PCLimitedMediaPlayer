@@ -18,7 +18,8 @@ class Limit
     private ?int $limit;
     private bool $default = false;
 
-    public function __construct(int $parent_id, ?int $page_id, ?int $mob_id, ?int $user_id, ?int $limit, bool $default = false) {
+    public function __construct(int $parent_id, ?int $page_id, ?int $mob_id, ?int $user_id, ?int $limit, bool $default = false)
+    {
         $this->parent_id = $parent_id;
         $this->page_id = $page_id;
         $this->mob_id = $mob_id;
@@ -57,7 +58,7 @@ class Limit
         $this->limit = $limit;
         return $this;
     }
-    
+
     public function isDefault(): bool
     {
         return $this->default;
@@ -71,7 +72,7 @@ class Limit
         if ($this->isDefault()) {
             return 4;
         }
-        
+
         switch (true) {
             case $this->user_id !== null && $this->mob_id !== null:
                 return 0;   // one user one medium

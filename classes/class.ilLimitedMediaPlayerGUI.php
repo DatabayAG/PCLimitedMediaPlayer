@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (c) 2017 Institut fuer Lern-Innovation, Friedrich-Alexander-Universitaet Erlangen-Nuernberg
  * GPLv3, see docs/LICENSE
@@ -9,7 +10,6 @@ use ILIAS\Plugin\LimitedMediaPlayer\Usage;
 use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
 use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
-
 
 /**
  * GUI class for showing the limited media player.
@@ -25,71 +25,70 @@ class ilLimitedMediaPlayerGUI
      */
     private $mejs_path = "lib/mediaelement-4.1.3";
 
-	/**
-	 * Parameters stored with the limited media object, added to the request
-	 */
-	private $parent_id;
-	private $page_id;
-	private $mob_id;
-	private $file;
-	private $mime;
-	private $startpic;
-	private $height;
-	private $width;
-	private $limit_context;
-	private $limit_plays;
-	private $play_pause;
+    /**
+     * Parameters stored with the limited media object, added to the request
+     */
+    private $parent_id;
+    private $page_id;
+    private $mob_id;
+    private $file;
+    private $mime;
+    private $startpic;
+    private $height;
+    private $width;
+    private $limit_context;
+    private $limit_plays;
+    private $play_pause;
 
-	/**
-	 * Internal status variables
-	 */
-	private Usage $usage;
+    /**
+     * Internal status variables
+     */
+    private Usage $usage;
     private Status $status;
-	private int $current_plays = 0;
+    private int $current_plays = 0;
     private ?string $current_seconds = null;
     private float $volume;
 
 
-	/**
-	 * Constructor
-	 * Initializes internal variables and objects
-	 * Does not change anything
-	 */
-	function __construct()
-	{
+    /**
+     * Constructor
+     * Initializes internal variables and objects
+     * Does not change anything
+     */
+    public function __construct()
+    {
         global $DIC;
 
-		$this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
+        $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
 
 
-		$this->parent_id = (int) $_GET["parent_id"];
-		$this->page_id = (int) $_GET["page_id"];
-		$this->mob_id = (int) $_GET["mob_id"];
-		$this->file = (string) $_GET["file"];
+        $this->parent_id = (int) $_GET["parent_id"];
+        $this->page_id = (int) $_GET["page_id"];
+        $this->mob_id = (int) $_GET["mob_id"];
+        $this->file = (string) $_GET["file"];
         $this->mime = (string) $_GET["mime"];
         $this->startpic = (string) $_GET["startpic"];
-		$this->height = (int) $_GET["height"];
-		$this->width = (int) $_GET["width"];
+        $this->height = (int) $_GET["height"];
+        $this->width = (int) $_GET["width"];
         $this->play_pause = (bool) $_GET["play_pause"];
-		$this->limit_context = (string) $_GET["limit_context"];
-		$this->limit_plays = (int) $_GET["limit_plays"];
+        $this->limit_context = (string) $_GET["limit_context"];
+        $this->limit_plays = (int) $_GET["limit_plays"];
 
         $this->usage_repo = $this->plugin->factory()->usageRepo($this->parent_id, $this->page_id, $this->mob_id, LimitContext::from($this->limit_context));
         $this->preferences_repo = $this->plugin->factory()->preferencesRepo();
 
         $this->usage = $this->usage_repo->get($DIC->user()->getId());
-	}
+    }
 
-	
-	/**
-	 * Handle the player request
-	 * The player is called from an iframe of the media object
-	 * ilCtrl is not used 
-	 */
-	public function executeCommand()
-	{
-	    switch ($_GET['cmd'])
-        {
+
+    /**
+     * Handle the player request
+     * The player is called from an iframe of the media object
+     * ilCtrl is not used
+     */
+    public function executeCommand()
+    {
+        switch ($_GET['cmd']) {
             case 'show':
                 $this->usage->setPageView($this->play_pause);
                 $this->current_plays = (int) $this->usage->getPlays();
@@ -114,38 +113,32 @@ class ilLimitedMediaPlayerGUI
             default:
                 echo 'unsupported';
         }
-	}
-	
-	/**
-	 * Show a page with embedded player
-	 * The page is called from an iframe, so it only shows the player and the counters
-	 */
-	protected function showPlayer()
-	{
-		if (is_file('Services/WebAccessChecker/classes/class.ilWACSignedPath.php'))
-		{
-			require_once("Services/WebAccessChecker/classes/class.ilWACSignedPath.php");
-		}
+    }
 
-        $medium_path = './data/'.CLIENT_ID.'/mobs/mm_'. $this->mob_id . '/' . $this->file;
-        if (class_exists('ilWACSignedPath'))
-		{
-			$medium_path = ilWACSignedPath::signFile($medium_path);
-		}
-		$medium_path = LIMPLY_BACKSTEPS . $medium_path;
+    /**
+     * Show a page with embedded player
+     * The page is called from an iframe, so it only shows the player and the counters
+     */
+    protected function showPlayer()
+    {
+        if (is_file('Services/WebAccessChecker/classes/class.ilWACSignedPath.php')) {
+            require_once("Services/WebAccessChecker/classes/class.ilWACSignedPath.php");
+        }
+
+        $medium_path = './data/' . CLIENT_ID . '/mobs/mm_' . $this->mob_id . '/' . $this->file;
+        if (class_exists('ilWACSignedPath')) {
+            $medium_path = ilWACSignedPath::signFile($medium_path);
+        }
+        $medium_path = LIMPLY_BACKSTEPS . $medium_path;
 
 
-        if ($this->startpic)
-        {
-            $startpic_path = './data/'.CLIENT_ID.'/mobs/mm_'. $this->mob_id . '/' . $this->startpic;
-			if (class_exists('ilWACSignedPath'))
-			{
-				$startpic_path = ilWACSignedPath::signFile($startpic_path);
-			}
-			$startpic_path = LIMPLY_BACKSTEPS . $startpic_path;
-		}
-        else
-        {
+        if ($this->startpic) {
+            $startpic_path = './data/' . CLIENT_ID . '/mobs/mm_' . $this->mob_id . '/' . $this->startpic;
+            if (class_exists('ilWACSignedPath')) {
+                $startpic_path = ilWACSignedPath::signFile($startpic_path);
+            }
+            $startpic_path = LIMPLY_BACKSTEPS . $startpic_path;
+        } else {
             $startpic_path = LIMPLY_BACKSTEPS . ilUtil::getImagePath('mcst_preview.svg');
         }
 
@@ -159,23 +152,22 @@ class ilLimitedMediaPlayerGUI
         $tpl->parseCurrentBlock();
 
         // show only startpic if limit is reached
-        if ($this->status->value() == Status::LIMIT)
-        {
+        if ($this->status->value() == Status::LIMIT) {
             $tpl->show();
             return;
         }
 
         $update_url = "player.php?cmd=update"
-            ."&limit_plays=".$this->limit_plays
-			."&limit_context=".$this->limit_context
-			."&parent_id=".$this->parent_id
-			."&page_id=".$this->page_id
-			."&mob_id=".$this->mob_id;
+            . "&limit_plays=" . $this->limit_plays
+            . "&limit_context=" . $this->limit_context
+            . "&parent_id=" . $this->parent_id
+            . "&page_id=" . $this->page_id
+            . "&mob_id=" . $this->mob_id;
 
         $volume_url = "player.php?cmd=volume";
 
         $config = array(
-            'type' => substr($this->mime,0, 5) == 'audio' ? 'audio' : 'video',
+            'type' => substr($this->mime, 0, 5) == 'audio' ? 'audio' : 'video',
             'mob_id' => $this->mob_id,
             'play_pause' => $this->play_pause,
             'current_plays' => $this->current_plays,
@@ -188,25 +180,25 @@ class ilLimitedMediaPlayerGUI
 
 
         $tpl->setCurrentBlock($config['type']);
-		$tpl->setVariable("FILE", $medium_path);
+        $tpl->setVariable("FILE", $medium_path);
         $tpl->setVariable("WIDTH", $this->width);
         $tpl->setVariable("HEIGHT", $this->height);
         $tpl->setVariable("MIME", $this->mime);
-		$tpl->parseCurrentBlock();
+        $tpl->parseCurrentBlock();
 
-        $tpl->setVariable("JQUERY_URL", $this->mejs_path.'/build/jquery.js');
-        $tpl->setVariable("PLAYER_JS_URL", $this->mejs_path.'/build/mediaelement-and-player.js');
-        $tpl->setVariable("PLAYER_CSS_URL", $this->mejs_path.'/build/mediaelementplayer.css');
+        $tpl->setVariable("JQUERY_URL", $this->mejs_path . '/build/jquery.js');
+        $tpl->setVariable("PLAYER_JS_URL", $this->mejs_path . '/build/mediaelement-and-player.js');
+        $tpl->setVariable("PLAYER_CSS_URL", $this->mejs_path . '/build/mediaelementplayer.css');
         $tpl->setVariable("FRAME_JS_URL", "js/ilPCLimitedMediaPlayerFrame.js");
         $tpl->setVariable("CONFIG", json_encode($config));
 
-		$tpl->show();
-	}
+        $tpl->show();
+    }
 
     /**
      * Update the usage data of the currently played medium (called by ajax)
      */
-	protected function updateUsage()
+    protected function updateUsage()
     {
         $plays = $_POST['current_plays'] ?? 0;
         $seconds = $_POST['current_seconds'] ?? null;
@@ -214,7 +206,8 @@ class ilLimitedMediaPlayerGUI
         $this->usage->setProgress((int) $plays, isset($seconds) ? (float) $seconds : null);
         $this->usage_repo->save($this->usage);
 
-        echo json_encode(array(
+        echo json_encode(
+            array(
             'status' => (string) $this->usage->getStatus($this->limit_plays, false),
             'seconds' => (float) $this->usage->getSeconds(),
             'plays' => (int) $this->usage->getPlays()
@@ -231,4 +224,3 @@ class ilLimitedMediaPlayerGUI
         echo json_encode(true);
     }
 }
-?>

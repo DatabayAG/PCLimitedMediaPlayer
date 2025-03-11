@@ -16,7 +16,7 @@ class Medium
         int $mob_id,
         string $title,
         int $limit
-    ){
+    ) {
         $this->page_id = $page_id;
         $this->mob_id = $mob_id;
         $this->title = $title;
