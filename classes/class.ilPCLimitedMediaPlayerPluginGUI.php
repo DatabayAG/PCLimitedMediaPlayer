@@ -14,9 +14,6 @@ use ILIAS\Plugin\LimitedMediaPlayer\Limit;
 /**
  * Page Component Limited Media Player plugin GUI
  *
- * @author Fred Neumann <fred.neumann@fau.de>
- * @version $Id$
- *
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
  */
 class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
