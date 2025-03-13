@@ -1,79 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<script type="text/javascript" src="{JQUERY_URL}"></script>
-	<script type="text/javascript" src="{PLAYER_JS_URL}"></script>
-    <script type="text/javascript" src="{FRAME_JS_URL}"></script>
-	<link rel="stylesheet" type="text/css" href="{PLAYER_CSS_URL}" media="screen" />
+	<!-- BEGIN script -->
+		<script type="text/javascript" src="{SCRIPT_URL}" />
+	<!-- END script -->
+	<!-- BEGIN style -->
+		<link rel="stylesheet" type="text/css" href="{STYLE_URL}" media="screen" />
+	<!-- END style -->
 </head>
-<style>
-    html, body, audio, video {
-        margin: 0;
-        padding: 0;
-    }
-
-    #medium {
-        position: fixed;
-        top: 0;
-        left: 0;
-        text-align: left;
-        max-width: 100%;
-    }
-
-    .mejs__container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        visibility: hidden;
-    }
-
-    #startpic {
-        position: fixed;
-        top: 0;
-        left: 0;
-        max-width: 100%;
-        z-index: 999999;
-    }
-
-    #transparent {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1000000;
-    }
-</style>
 <body>
 <!-- BEGIN message -->
-{MESSAGE}
+	{MESSAGE}
 <!-- END message -->
+
 <!-- BEGIN startpic -->
     <img id="startpic" height="{HEIGHT}" src="{FILE}"/>
 <!-- END startpic -->
+
 <!-- BEGIN audio -->
  	<audio id="medium" height="{HEIGHT}">
-		<source src="{FILE}" type="{MIME}">
+		<source src="{FILE}" type="{MIME}" />
 	</audio>
-    <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
+    <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
 <!-- END audio -->
+
 <!-- BEGIN video -->
     <video id="medium" height="{HEIGHT}">
-        <source src="{FILE}" type="{MIME}">
+        <source src="{FILE}" type="{MIME}" />
     </video>
-    <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"/>
+    <img id="transparent" width="{WIDTH}" height="{HEIGHT}" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
 <!-- END video -->
+
 	<script>
         $(function() {
             ilPCLimitedMediaPlayerFrame.initPlayer({CONFIG});
         });
 	</script>
-<!-- BEGIN on_load_code -->
-<script type="text/javascript">
-	il.Util.addOnLoad(function () {
-		<!-- BEGIN on_load_code_inner -->
-		{OLCODE}
-		<!-- END on_load_code_inner -->
-	});
-</script>
-<!-- END on_load_code --></body>
 </body>
 </html>

@@ -2,21 +2,27 @@
 
 declare(strict_types=1);
 
-namespace ILIAS\Plugin\LimitedMediaPlayer;
-
-use ilPCLimitedMediaPlayerPlugin;
-use ilWACSignedPath;
-use ilUtil;
-use ilGlobalTemplateInterface;
 use ILIAS\HTTP\GlobalHttpState;
 use ILIAS\Filesystem\Stream\Streams;
+use ILIAS\Plugin\LimitedMediaPlayer\Status;
+use ILIAS\Plugin\LimitedMediaPlayer\Usage;
+use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
+use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
+use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
 
 /**
- * Class to show the player and handle updates
- * This is called from an iframe embedding the player
+ * GUI class to show the player and handle updates (called from iframe)
+ *
+ * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerGUI: ilObjPluginDispatchGUI
  */
-class Player
+class ilPCLimitedMediaPlayerGUI
 {
+    private const SHOW_PLAYER = 'showPlayer';
+    private const CMD_UPDATE_USAGE = 'updateUsage';
+    private const CMD_UPDATE_VOLUME = 'updateVolume';
+
+    private ilCtrlInterface $ctrl;
     private GlobalHttpState $http;
     private RequestVariables $get;
     private RequestVariables $post;
@@ -24,11 +30,6 @@ class Player
     private ilPCLimitedMediaPlayerPlugin $plugin;
     private UsageRepo $usage_repo;
     private PreferencesRepo $preferences_repo;
-
-    /**
-     * @var string  Path to the mediaelement player
-     */
-    private $mejs_path = "lib/mediaelement-4.1.3";
 
     /**
      * Parameters stored with the limited media object, added to the request
@@ -59,6 +60,8 @@ class Player
         global $DIC;
 
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
+        $this->ctrl = $DIC->ctrl();
+        $this->http = $DIC->http();
         $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $DIC->refinery());
         $this->post = new RequestVariables($DIC->http()->wrapper()->post(), $DIC->refinery());
 
@@ -76,42 +79,21 @@ class Player
 
         $this->usage_repo = $this->plugin->factory()->usageRepo($this->parent_id, $this->page_id, $this->mob_id, LimitContext::from($this->limit_context));
         $this->preferences_repo = $this->plugin->factory()->preferencesRepo();
-
         $this->usage = $this->usage_repo->get($DIC->user()->getId());
-
+        $this->volume = $this->preferences_repo->getVolume();
     }
 
-
-    /**
-     * Handle the player request
-     * The player is called from an iframe of the media object
-     * ilCtrl is not used
-     */
-    public function handleRequest()
+    public function executeCommand(): void
     {
-        switch ($this->get->string('cmd')) {
-            case 'show':
-                $this->usage->setPageView($this->play_pause);
-                $this->current_plays = (int) $this->usage->getPlays();
-                $this->current_seconds = (int) $this->usage->getSeconds();
-                $this->status = $this->usage->getStatus($this->limit_plays, $this->play_pause);
-                $this->volume = $this->preferences_repo->getVolume();
-                // show a page with the embedded player
-                $this->showPlayer();
-                break;
+        switch ($cmd = $this->ctrl->getCmd(self::SHOW_PLAYER)) {
+            case self::SHOW_PLAYER:
+            case self::CMD_UPDATE_USAGE:
+            case self::CMD_UPDATE_VOLUME:
+                $this->$cmd();
 
-            case 'update':
-                // update the usage data (ajax call)
-                $this->updateUsage();
-                break;
-
-            case 'volume':
-                // update the volume setting (ajax call)
-                $this->updateVolume();
-                break;
-
+                // no break
             default:
-                echo 'unsupported';
+                echo 'unsupported command';
         }
     }
 
@@ -121,24 +103,26 @@ class Player
      */
     protected function showPlayer()
     {
+        // notify the page view and adapt status
+        $this->usage->setPageView($this->play_pause);
+        $this->current_plays = (int) $this->usage->getPlays();
+        $this->current_seconds = (int) $this->usage->getSeconds();
+        $this->status = $this->usage->getStatus($this->limit_plays, $this->play_pause);
+
         $medium_path = './data/' . CLIENT_ID . '/mobs/mm_' . $this->mob_id . '/' . $this->file;
         if (class_exists('ilWACSignedPath')) {
             $medium_path = ilWACSignedPath::signFile($medium_path);
         }
-        $medium_path = LIMPLY_BACKSTEPS . $medium_path;
-
 
         if ($this->startpic) {
             $startpic_path = './data/' . CLIENT_ID . '/mobs/mm_' . $this->mob_id . '/' . $this->startpic;
             if (class_exists('ilWACSignedPath')) {
                 $startpic_path = ilWACSignedPath::signFile($startpic_path);
             }
-            $startpic_path = LIMPLY_BACKSTEPS . $startpic_path;
         } else {
-            $startpic_path = LIMPLY_BACKSTEPS . ilUtil::getImagePath('mcst_preview.svg');
+            $startpic_path = ilUtil::getImagePath('mcst_preview.svg');
         }
 
-        /** @var ilGLobalTemplateInterface $tpl */
         $tpl = $this->plugin->getTemplate("tpl.player.html");
 
         $tpl->setCurrentBlock('startpic');
@@ -149,18 +133,20 @@ class Player
 
         // show only startpic if limit is reached
         if ($this->status->value() == Status::LIMIT) {
-            $tpl->printToStdout();
-            return;
+            $this->http->saveResponse($this->http->response()->withBody(Streams::ofString($tpl->get())));
+            $this->http->sendResponse();
+            $this->http->close();
         }
 
-        $update_url = "player.php?cmd=update"
-            . "&limit_plays=" . $this->limit_plays
-            . "&limit_context=" . $this->limit_context
-            . "&parent_id=" . $this->parent_id
-            . "&page_id=" . $this->page_id
-            . "&mob_id=" . $this->mob_id;
+        $this->ctrl->setParameter($this, 'limit_plays', $this->limit_plays);
+        $this->ctrl->setParameter($this, 'limit_context', $this->limit_context);
+        $this->ctrl->setParameter($this, 'parent_id', $this->parent_id);
+        $this->ctrl->setParameter($this, 'page_id', $this->page_id);
+        $this->ctrl->setParameter($this, 'parent_id', $this->parent_id);
+        $this->ctrl->setParameter($this, 'mob_id', $this->mob_id);
 
-        $volume_url = "player.php?cmd=volume";
+        $update_url = $this->ctrl->getLinkTarget($this, 'updateUsage');
+        $volume_url = $this->ctrl->getLinkTarget($this, 'updateVolume');
 
         $config = array(
             'type' => substr($this->mime, 0, 5) == 'audio' ? 'audio' : 'video',
@@ -181,15 +167,26 @@ class Player
         $tpl->setVariable("MIME", $this->mime);
         $tpl->parseCurrentBlock();
 
-        $js_files =  \ilPlayerUtil::getJsFilePaths();
+        $scripts = [iljQueryUtil::getLocaljQueryPath()];
+        $scripts = array_merge($scripts, ilPlayerUtil::getLocalMediaElementJsPath());
+        $scripts[] = $this->plugin->getDirectory() . '/resources/limited_media_player_frame.js';
+        foreach ($scripts as $script) {
+            $tpl->setCurrentBlock('$script');
+            $tpl->setVariable("SCRIPT_URL", $script);
+            $tpl->parseCurrentBlock();
+        }
 
-        $tpl->setVariable("JQUERY_URL", $this->mejs_path . '/build/jquery.js');
-        $tpl->setVariable("PLAYER_JS_URL", $this->mejs_path . '/build/mediaelement-and-player.js');
-        $tpl->setVariable("PLAYER_CSS_URL", $this->mejs_path . '/build/mediaelementplayer.css');
-        $tpl->setVariable("FRAME_JS_URL", "js/ilPCLimitedMediaPlayerFrame.js");
+        $styles = [ilPlayerUtil::getLocalMediaElementCssPath()];
+        $styles[] = $this->plugin->getDirectory() . '/resources/limited_media_player_style.js';
+        foreach ($styles as $style) {
+            $tpl->setCurrentBlock('$script');
+            $tpl->setVariable("SCRIPT_URL", $script);
+            $tpl->parseCurrentBlock();
+        }
+
         $tpl->setVariable("CONFIG", json_encode($config));
 
-        $this->http->saveResponse($this->http->response()->withBody(Streams::ofString($tpl->printToString())));
+        $this->http->saveResponse($this->http->response()->withBody(Streams::ofString($tpl->get())));
         $this->http->sendResponse();
         $this->http->close();
     }

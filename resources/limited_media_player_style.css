@@ -1,0 +1,34 @@
+html, body, audio, video {
+    margin: 0;
+    padding: 0;
+}
+
+#medium {
+    position: fixed;
+    top: 0;
+    left: 0;
+    text-align: left;
+    max-width: 100%;
+}
+
+.mejs__container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    visibility: hidden;
+}
+
+#startpic {
+    position: fixed;
+    top: 0;
+    left: 0;
+    max-width: 100%;
+    z-index: 999999;
+}
+
+#transparent {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000000;
+}
