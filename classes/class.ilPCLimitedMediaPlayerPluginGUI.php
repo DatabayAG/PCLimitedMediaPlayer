@@ -1,19 +1,17 @@
 <?php
 
-/**
- * Copyright (c) 2017 Institut fuer Lern-Innovation, Friedrich-Alexander-Universitaet Erlangen-Nuernberg
- * GPLv3, see docs/LICENSE
- */
+declare(strict_types=1);
 
 use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
 use ILIAS\Plugin\LimitedMediaPlayer\Status;
 use ILIAS\Plugin\LimitedMediaPlayer\Usage;
 use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\Limit;
+use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
+use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
+use ilGlobalTemplateInterface as Gti;
 
 /**
- * Page Component Limited Media Player plugin GUI
- *
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
  */
 class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
@@ -24,43 +22,55 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     public const VIEW_PRESENTATION = 'presentation';
     public const VIEW_PREVIEW = 'preview';
 
+    public const CMD_CREATE = 'create';
+    public const CMD_EDIT = 'edit';
+    public const CMD_UPDATE = 'update';
+    public const CMD_CANCEL = 'cancel';
 
     /** @var ilPCLimitedMediaPlayerPlugin $plugin */
     protected ilPageComponentPlugin $plugin;
+    private ?ilPageContent $content_object;
+    private ilPageObject $page_obj;
+    private ilPCMediaObject $page_media_object;
 
-    /** @var string $errorMessage */
-    protected $errorMessage;
+    private ilCtrlInterface $ctrl;
+    private ilGlobalTemplateInterface $tpl;
+    private ilTabsGUI $tabs;
+    private ilObjUser $user;
 
-    /** @var  ilPCPlugged $contentObj */
-    private $contentObj;
-
-    /** @var  ilAssQuestionPage $pageObj */
-    private $pageObj;
-
-    /** @var  ilPCMediaObject */
-    private $pageMediaObj;
+    private RequestVariables $get;
+    private RequestVariables $post;
 
 
-    /**
-     * Execute command
-     *
-     * @param
-     * @return
-     */
+    private string $error_message;
+
+    public function __construct()
+    {
+        global $DIC;
+
+        parent::__construct();
+
+        $this->ctrl = $DIC->ctrl();
+        $this->tpl = $DIC->tpl();
+        $this->tabs = $DIC->tabs();
+        $this->user = $DIC->user();
+        $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
+        $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $DIC->refinery());
+        $this->post = new RequestVariables($DIC->http()->wrapper()->post(), $DIC->refinery());
+    }
+
     public function executeCommand(): void
     {
-        global $ilCtrl;
+        switch ($cmd = $this->ctrl->getCmd()) {
+            case self::CMD_CREATE:
+            case self::CMD_EDIT:
+            case self::CMD_UPDATE:
+            case self::CMD_CANCEL:
+                $this->$cmd();
 
-        $next_class = $ilCtrl->getNextClass();
-
-        switch ($next_class) {
+                // no break
             default:
-                // perform valid commands
-                $cmd = $ilCtrl->getCmd();
-                if (in_array($cmd, array("create", "edit", "update", "cancel"))) {
-                    $this->$cmd();
-                }
-                break;
+                echo 'unknown command';
         }
     }
 
@@ -70,10 +80,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     public function insert(): void
     {
-        global $tpl;
-
         $form = $this->initForm(true);
-        $tpl->setContent($form->getHTML());
+        $this->tpl->setContent($form->getHTML());
     }
 
     /**
@@ -81,19 +89,17 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     public function create(): void
     {
-        global $tpl, $lng, $ilCtrl;
-
         $form = $this->initForm(true);
         if ($form->checkInput()) {
             if ($this->saveForm($form, true)) {
-                ilUtil::sendSuccess($lng->txt("msg_obj_created"), true);
+                $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_created"), true);
             } else {
-                ilUtil::sendFailure($this->errorMessage, true);
+                $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_FAILURE, $this->error_message, true);
             }
             $this->returnToParent();
         }
         $form->setValuesByPost();
-        $tpl->setContent($form->getHtml());
+        $this->tpl->setContent($form->getHtml());
     }
 
     /**
@@ -101,40 +107,33 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     public function edit(): void
     {
-        global $tpl;
-
         $this->setTabs("edit");
         $form = $this->initForm();
-        $tpl->setContent($form->getHTML());
+        $this->tpl->setContent($form->getHTML());
     }
 
     /**
      * Update the edited element
      */
-    public function update()
+    public function update(): void
     {
-        global $tpl, $lng, $ilCtrl;
-
         $form = $this->initForm(false);
         if ($form->checkInput()) {
             if ($this->saveForm($form, false)) {
-                ilUtil::sendSuccess($lng->txt("msg_obj_modified"), true);
+                $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_modified"), true);
             } else {
-                ilUtil::sendFailure($this->errorMessage, true);
+                $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_FAILURE, $this->error_message, true);
             }
             $this->returnToParent();
         }
         $form->setValuesByPost();
-        $tpl->setContent($form->getHtml());
+        $this->tpl->setContent($form->getHtml());
     }
 
     /**
      * Save the posted properties
-     * @param ilPropertyFormGUI     $a_form
-     * @param bool                  $a_create
-     * @return bool
      */
-    protected function saveForm($a_form, $a_create)
+    protected function saveForm(ilPropertyFormGUI $a_form, bool $a_create): bool
     {
         // save the properties
         $properties = array_merge($this->getProperties(), array(
@@ -153,7 +152,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         if (!$success) {
-            $this->errorMessage = $this->txt('err_save_properties');
+            $this->error_message = $this->txt('err_save_properties');
             return false;
         }
 
@@ -207,7 +206,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $mediaObj->update();
 
         } catch (Exception $e) {
-            $this->errorMessage = $this->txt('err_save_media_obj');
+            $this->error_message = $this->txt('err_save_media_obj');
             return false;
         }
 
@@ -215,17 +214,11 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     }
 
 
-
     /**
      * Init editing form
-     *
-     * @param        int        $a_mode        Edit Mode
      */
-    protected function initForm($a_create = false)
+    protected function initForm(bool $a_create = false): ilPropertyFormGUI
     {
-        global $lng, $ilCtrl;
-
-        include_once("Services/Form/classes/class.ilPropertyFormGUI.php");
         $form = new ilPropertyFormGUI();
 
         // title
@@ -302,7 +295,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $form->addItem($play_pause);
 
         // add debugging properties
-        if ($this->plugin->getDebug()) {
+        if ($this->plugin::DEBUG) {
             $settings_debug = new ilFormSectionHeaderGUI();
             $settings_debug->setTitle($this->txt('settings_debug'));
             $form->addItem($settings_debug);
@@ -315,10 +308,10 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         if ($a_create) {
-            $limit_plays->setValue(1);
+            $limit_plays->setValue('1');
             $limit_context->setValue('testpass');
-            $play_modal->setValue(0);
-            $play_pause->setValue(1);
+            $play_modal->setValue('0');
+            $play_pause->setValue('1');
         } else {
             $prop = $this->getProperties();
 
@@ -339,72 +332,47 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         }
 
-
         // save and cancel commands
         if ($a_create) {
             $this->addCreationButton($form);
-            $form->addCommandButton("cancel", $lng->txt("cancel"));
+            $form->addCommandButton("cancel", $this->lng->txt("cancel"));
             $form->setTitle($this->txt("cmd_insert"));
         } else {
-            $form->addCommandButton("update", $lng->txt("save"));
-            $form->addCommandButton("cancel", $lng->txt("cancel"));
+            $form->addCommandButton("update", $this->lng->txt("save"));
+            $form->addCommandButton("cancel", $this->lng->txt("cancel"));
             $form->setTitle($this->txt("edit_limited_media_player"));
         }
 
         $form->setMultipart(true);
-        $form->setFormAction($ilCtrl->getFormAction($this));
+        $form->setFormAction($this->ctrl->getFormAction($this));
         return $form;
     }
 
 
-    /**
-     * Cancel
-     */
-    public function cancel()
+    public function cancel(): void
     {
         $this->returnToParent();
     }
 
-
-    /**
-     * Set tabs
-     *
-     * @param
-     * @return
-     */
-    public function setTabs($a_active)
+    public function setTabs($a_active): void
     {
-        global $ilTabs, $ilCtrl;
-
-        $ilTabs->addTab("edit", $this->txt("settings"), $ilCtrl->getLinkTarget($this, "edit"));
-        $ilTabs->activateTab($a_active);
+        $this->tabs->addTab("edit", $this->txt("settings"), $this->ctrl->getLinkTarget($this, "edit"));
+        $this->tabs->activateTab($a_active);
     }
 
-    /**
-     * Get a plugin text
-     * @param $a_var
-     * @return mixed
-     */
-    protected function txt($a_var)
+    protected function txt(string $a_var): string
     {
         return $this->getPlugin()->txt($a_var);
     }
 
-
     /**
      * Get HTML for element
      *
-     * @param string    page mode (edit, presentation, print, preview, offline)
+     * @param string    $a_mode page mode (edit, presentation, print, preview, offline)
      * @return string   html code
      */
-    public function getElementHTML(
-        string $a_mode,
-        array $a_properties,
-        string $plugin_version
-    ): string {
-        /** @var ilTemplate $tpl */
-        global $tpl, $ilCtrl, $ilUser;
-
+    public function getElementHTML(string $a_mode, array $a_properties, string $plugin_version): string
+    {
         $info = array();
         $params = array();
         $btpl = $this->getPlugin()->getTemplate("tpl.page_block.html");
@@ -420,7 +388,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $item = $mob->getMediaItem('Fullscreen');
         }
 
-        $limit = new Limit($this->getParentId(), $this->getPageId(), $mob->getId(), $ilUser->getId(), $a_properties['limit_plays'] ?? null, true);
+        $limit = new Limit($this->getParentId(), $this->getPageId(), $mob->getId(), $this->user->getId(), $a_properties['limit_plays'] ?? null, true);
 
         $this->setMode($this->getViewMode());
         switch ($this->getMode()) {
@@ -434,7 +402,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 //
                 // Show the embedded player
                 //
-                require_once('Services/jQuery/classes/class.iljQueryUtil.php');
                 iljQueryUtil::initjQuery();
                 iljQueryUtil::initjQueryUI();
 
@@ -450,8 +417,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
                 // get the usage and status for the context
                 $usage_repo = $this->plugin->factory()->usageRepo($this->getParentId(), $this->getPageId(), $mob->getId(), $limit_context);
-                $usage = $usage_repo->get($ilUser->getId());
-                $usage->setPageView((int) $a_properties['play_pause']);
+                $usage = $usage_repo->get($this->user->getId());
+                $usage->setPageView((bool) $a_properties['play_pause']);
 
                 $status = $usage->getStatus($limit->getLimit(), (bool) $a_properties['play_pause']);
 
@@ -462,7 +429,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                     $controls = ($a_properties['play_pause'] ? array('pause', 'volume') : array('volume'));
                     $html .= $this->getElementControlsHTML($mob, $usage, $status, $controls);
 
-                    require_once('Services/UIComponent/Modal/classes/class.ilModalGUI.php');
                     $modal = ilModalGUI::getInstance();
                     $modal->setId('limplyModal' . $mob->getId());
                     $modal->setHeading($a_properties['medium_title']);
@@ -485,7 +451,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 $texts = array(
                     'test' => 'Hallo'
                 );
-                $tpl->addOnLoadCode('il.PCLimitedMediaPlayerPage.initPage(' . json_encode($texts) . ');');
+                $this->tpl->addOnLoadCode('il.PCLimitedMediaPlayerPage.initPage(' . json_encode($texts) . ');');
                 break;
 
             case self::VIEW_EDIT:
@@ -509,7 +475,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         // add debugging information
-        if ($this->getPlugin()->getDebug()) {
+        if ($this->plugin::DEBUG) {
             $info = array_merge($info, $this->getDebugProperties());
         }
 
@@ -528,7 +494,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $tpl = $this->getPlugin()->getTemplate("tpl.page_player.html");
 
         // media iframe
-        $url = $this->plugin->getPlayerUrl() . '?cmd=show';
+
+        $url = $this->ctrl->getLinkTargetByClass([ilUIPluginRouterGUI::class, ilPCLimitedMediaPlayerGUI::class]);
         $params = array(
             'parent_id' => (int) $this->getParentId(),
             'page_id' => (int) $this->getPageId(),
@@ -597,7 +564,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      * get the HTML code of the element information
      * @param array                         $info (text => value)
      */
-    protected function getElementInfoHTML($a_properties, Limit $limit, ?Usage $usage = null, $info = [])
+    protected function getElementInfoHTML($a_properties, Limit $limit, ?Usage $usage = null, $info = []): string
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_info.html");
 
@@ -638,77 +605,41 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     /**
      * Get the id of the current question
-     * @return int|null
      */
-    protected function getQuestionId()
+    protected function getQuestionId(): ?int
     {
         return $_GET['q_id'];
     }
 
     /**
      * Get the Id of the current page
-     * Currently eqal to question id, only available in editor, preview and print view
-     * @return int|null
+     * Currently equal to question id, only available in editor, preview and print view
      */
-    protected function getPageId()
+    protected function getPageId(): int
     {
-        global $ilCtrl, $ilUser, $ilDB, $ilPluginAdmin, $lng;
-
         if ($this->getViewMode() == self::VIEW_PRESENTATION) {
-            require_once('Modules/Test/classes/class.ilTestSessionFactory.php');
-            require_once('Modules/Test/classes/class.ilTestSequenceFactory.php');
-            $testObj = new ilObjTest($_GET['ref_id']);
-            $sessionFactory = new ilTestSessionFactory($testObj);
-            $sequenceFactory = new ilTestSequenceFactory($ilDB, $lng, $ilPluginAdmin, $testObj);
-            $sessionObj = $sessionFactory->getSessionByUserId($ilUser->getId());
-            if (method_exists('ilTestSequenceFactory', 'getSequence')) {
-                // 5.0
-                $sequenceObj = $sequenceFactory->getSequence($sessionObj);
-            } elseif ((method_exists('ilTestSequenceFactory', 'getSequenceByTestSession'))) {
-                // 5.2
-                $sequenceObj = $sequenceFactory->getSequenceByTestSession($sessionObj);
-            }
 
-            $sequenceObj->loadFromDb();
-            $sequenceObj->loadQuestions();
+            $ref_id = $this->get->integer('ref_id', 0);
+            $sequence = $this->get->integer('sequence', 0);
 
-            $sequence = $_GET["sequence"];
+            $sequence_obj = $this->plugin->factory()->testSequence($ref_id);
+
             if (empty($sequence)) {
-                $sequence = $sequenceObj->getFirstSequence();
+                $sequence = $sequence_obj->getFirstSequence();
             }
+            return $sequence_obj->getQuestionForSequence($sequence);
 
-            // only 5.0 - this parameter is not set in 5.1+ when a question is shown
-            switch ($_GET["activecommand"]) {
-                case "next":
-                    $sequence = $sequenceObj->getNextSequence($sequence);
-                    break;
-                case "previous":
-                    $sequence = $sequenceObj->getPreviousSequence($sequence);
-                    break;
-            }
-            return $sequenceObj->getQuestionForSequence($sequence);
         } else {
-            return $_GET['q_id'];
+            return $this->get->integer('q_id', 0);
         }
     }
 
     /**
-     * Get the type of the parent object
-     * Currently onl 'qpl'
-     */
-    protected function getParentType()
-    {
-        return 'qpl';
-    }
-
-
-    /**
      * Get the mode for viewing the element
      */
-    protected function getViewMode()
+    protected function getViewMode(): string
     {
-        global $ilCtrl;
-        switch ($ilCtrl->getCmdClass()) {
+        switch ($this->ctrl->getCmdClass()) {
             case 'ilassquestionpagegui':
             case 'iltestexpresspageobjectgui':
                 return self::VIEW_EDIT;
@@ -724,7 +655,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 return self::VIEW_PRINT;
 
             case 'ilobjtestgui':
-                switch ($ilCtrl->getCmd) {
+                switch ($this->ctrl->getCmd()) {
                     case 'preview':
                         return self::VIEW_PREVIEW;
 
@@ -747,81 +678,66 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     /**
      * Get the hierarchical ID of the page content
-     * @return int|null
      */
-    protected function getHierId()
+    protected function getHierId(): string
     {
-        /** @var ilPCPluggedGUI $pcgui */
-        if ($pcgui = $this->getPCGUI()) {
-            return $pcgui->getHierId();
-        }
-        return null;
+        return $this->getPCGUI()->getHierId();
     }
 
     /**
      * Get the id of the parent object
-     * Curently the object id of the pool or test
+     * Currently the object id of the pool or test
      */
-    protected function getParentId()
+    protected function getParentId(): int
     {
-        return ilObject::_lookupObjectId($_GET['ref_id']);
+        return ilObject::_lookupObjectId($this->get->integer('ref_id', 0));
     }
 
     /**
      * Get the content object of this page content
-     * @return ilPCPlugged|null
      */
-    protected function getContentObject()
+    protected function getContentObject(): ilPageContent
     {
-        if (isset($this->contentObj)) {
-            return $this->contentObj;
+        if ($this->content_object === null) {
+            $this->content_object = $this->getPCGUI()->getContentObject();
+            $this->content_object->setPcId($this->content_object->readPCId());
         }
 
-        /** @var ilPCPluggedGUI $pcgui */
-        if ($pcgui = $this->getPCGUI()) {
-            $this->contentObj = $pcgui->getContentObject();
-            if (isset($this->contentObj)) {
-                $this->contentObj->setPcId($this->contentObj->readPCId());
-            }
-        }
-
-        return $this->contentObj;
+        return $this->content_object;
     }
 
     /**
      * get the page object
-     * @return ilPageObject|null
      */
-    protected function getPageObject()
+    protected function getPageObject(): ?ilPageObject
     {
-        if (isset($this->pageObj)) {
-            return $this->pageObj;
+        if (isset($this->page_obj)) {
+            return $this->page_obj;
         }
 
         if ($contentObj = $this->getContentObject()) {
             // get the page object from editor context
             // this should be possible for 'create' 'edit' and 'update'
-            $this->pageObj = $contentObj->getPage();
+            $this->page_obj = $contentObj->getPage();
         }
 
-        if (!isset($this->pageObj)) {
+        if (!isset($this->page_obj)) {
             $page_id = $this->getPageId();
             if (!empty($page_id)) {
                 // get the page object from question id in url
                 // this should be possible in single question preview and in test run
-                $this->pageObj = new ilAssQuestionPage($page_id);
+                $this->page_obj = new ilAssQuestionPage($page_id);
             }
         }
 
-        return $this->pageObj;
+        return $this->page_obj;
     }
 
     /**
      * Get the linked media object from the current page
      * @param array|null    $a_properties   (must be provided when called by getElementHTML)
-     * @return ilPCMediaObject|null
      */
-    protected function getPageMediaObject($a_properties = null)
+    protected function getPageMediaObject(?array $a_properties = null): ?ilPCMediaObject
     {
         if (!isset($a_properties)) {
             $a_properties = $this->getProperties();
@@ -843,9 +759,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     /**
      * Add a new media object to the page
-     * @return ilPCMediaObject
      */
-    protected function addPageMediaObject()
+    private function addPageMediaObject(): ilPCMediaObject
     {
         $pageObj = $this->getPageObject();
         $pageObj->read();
@@ -860,7 +775,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $mediaObj->addMediaItem($mediaItem);
         $mediaObj->update();
 
-        require_once('Services/COPage/classes/class.ilPCMediaObject.php');
         $pageMediaObj = new ilPCMediaObject($pageObj);
         $pageMediaObj->setDom($pageObj->getDom());
         $pageMediaObj->setMediaObject($mediaObj);
@@ -888,10 +802,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     /**
      * Replace the media object reference by a clone if it is used on another page, too
      * This avoids side effects with other limited media
-     * @param ilPCMediaObject   $pageMediaObject
-     * @return ilObjMediaObject
      */
-    protected function replaceMediaObject($pageMediaObject)
+    private function replaceMediaObject(ilPCMediaObject $pageMediaObject): ilObjMediaObject
     {
         /** @var ilObjMediaObject $mediaObj */
         if ($mediaObj = $pageMediaObject->getMediaObject()) {
@@ -925,15 +837,12 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         return $mediaObj;
     }
 
-
     /**
      * Set the standard item of the medium
      * The standard item is displayed in the deactivated block of the media object
      * This function will get obsolete when the media object can be assigned in the background
-     *
-     * @param ilObjMediaObject  $mediaObj
      */
-    protected function setMediaStandardItem($mediaObj)
+    private function setMediaStandardItem(ilObjMediaObject $mediaObj): void
     {
         $standardItem = $mediaObj->getMediaItem('Standard');
         if (empty($standardItem)) {
@@ -947,44 +856,28 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         @copy(ilUtil::getImagePath('mcst_preview.svg'), $standard_path);
         $standardItem->setLocation($standard_name);
         $standardItem->setLocationType("LocalFile");
-        $standardItem->setHeight(0);
+        $standardItem->setHeight('0');
         $standardItem->setFormat(ilObjMediaObject::getMimeType($standard_path));
         $standardItem->setCaption($this->txt('medium_edit_notice'));
     }
 
-    /**
-     * Get debugging properties
-     * @return array
-     */
-    protected function getDebugProperties()
+    private function getDebugProperties(): array
     {
-        if (!$this->plugin->getDebug()) {
-            return array();
+        if (!$this->plugin::DEBUG) {
+            return[];
         }
 
-        $properties = array();
+        $properties = [];
         $properties['debug_mode'] = $this->getMode();
         $properties['debug_page_id'] = $this->getPageId();
+        $properties['debug_hier_id'] = $this->getPCGUI()->getHierId();
 
-
-        /** @var ilPCPluggedGUI $pcgui */
-        if ($pcgui = $this->getPCGUI()) {
-            $properties['debug_pcgui'] = get_class($pcgui);
-            $properties['debug_hier_id'] = $pcgui->getHierId();
-
-            /** @var ilPCPlugged $co */
-            if ($co = $pcgui->getContentObject()) {
-                $properties['debug_co'] = get_class($co);
-                $properties['debug_pcid'] = $co->getPCId();
-
-                /** @var ilPageObject $pg */
-                if ($pg = $co->getPage()) {
-                    $properties['debug_pg'] = get_class($pg);
-                }
-            }
+        if ($co = $this->getPCGUI()->getContentObject()) {
+            $properties['debug_co'] = get_class($co);
+            $properties['debug_pcid'] = $co->getPCId();
+            $properties['debug_pg'] = get_class($co->getPage());
         }
 
         return $properties;
     }
-
 }

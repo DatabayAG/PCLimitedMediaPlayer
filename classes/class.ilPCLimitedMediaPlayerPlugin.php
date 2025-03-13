@@ -1,35 +1,25 @@
 <?php
 
-/**
- * Copyright (c) 2017 Institut fuer Lern-Innovation, Friedrich-Alexander-Universitaet Erlangen-Nuernberg
- * GPLv3, see docs/LICENSE
- */
+declare(strict_types=1);
 
-use ILIAS\Plugin\LimitedMediaPlayer\ParentType;
 use ILIAS\Plugin\LimitedMediaPlayer\Factory;
 
-/**
- * Page Component Limited Media Player plugin
- */
 class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 {
     public const ID = 'limply';
-
-    /**
-     * Activate to show debugging info in the page component
-     */
-    private const DEBUG = false;
+    public const PARENT_TYPE = 'qpl';
+    public const DEBUG = false;
 
     private ?Factory $factory = null;
 
     public function isValidParentType(string $a_type): bool
     {
-        return in_array($a_type, ParentType::CASES);
+        return $a_type == self::PARENT_TYPE;
     }
 
     public function getJavascriptFiles(string $a_mode): array
     {
-        return ['js/ilPCLimitedMediaPlayerPage.js'];
+        return ['resources/limited_media_player_pages.js'];
     }
 
     public function getCssFiles(string $a_mode): array
@@ -39,20 +29,7 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 
     public function factory(): Factory
     {
-        return $this->factory ?? new Factory($this->db);
-    }
-
-    public function getDebug(): bool
-    {
-        return self::DEBUG;
-    }
-
-    /**
-     * This URL is used for the iframe showing the player
-     */
-    public function getPlayerUrl(): string
-    {
-        return $this->getDirectory() . '/player.php';
+        return $this->factory ?? new Factory();
     }
 
 }

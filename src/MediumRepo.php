@@ -29,10 +29,10 @@ class MediumRepo
      *
      * @return  Medium[]
      */
-    public function findLimitedMedia(array $a_page_ids, ParentType $a_parent_type, string $a_lang = '-', ?int $a_mob_id = null): array
+    public function findLimitedMedia(array $a_page_ids, string $a_parent_type = 'qpl', string $a_lang = '-', ?int $a_mob_id = null): array
     {
         $query = "SELECT page_id, content FROM page_object "
-            . " WHERE parent_type = " . $this->db->quote($a_parent_type->value(), 'text')
+            . " WHERE parent_type = " . $this->db->quote($a_parent_type, 'text')
             . " AND lang = " . $this->db->quote($a_lang, 'text')
             . " AND " . $this->db->in('page_id', $a_page_ids, false, 'integer')
             . " AND " . $this->db->like('content', 'text', '%PCLimitedMediaPlayer%', false);

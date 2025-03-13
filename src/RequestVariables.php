@@ -54,6 +54,4 @@ class RequestVariables
         }
         return $default;
     }
-
-
 }

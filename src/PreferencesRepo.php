@@ -23,7 +23,7 @@ class PreferencesRepo
     /**
      * Update the volume setting of the playwer (0 to 1)
      */
-    public function updateVolume(float $volume)
+    public function updateVolume(float $volume): void
     {
         ilSession::set('limply_volume', $volume);
     }

@@ -101,7 +101,7 @@ class ilPCLimitedMediaPlayerGUI
      * Show a page with embedded player
      * The page is called from an iframe, so it only shows the player and the counters
      */
-    protected function showPlayer()
+    private function showPlayer()
     {
         // notify the page view and adapt status
         $this->usage->setPageView($this->play_pause);
@@ -194,7 +194,7 @@ class ilPCLimitedMediaPlayerGUI
     /**
      * Update the usage data of the currently played medium (called by ajax)
      */
-    protected function updateUsage()
+    private function updateUsage()
     {
         $plays = $this->post->integer('current_plays');
         $seconds = $this->post->float('current_seconds');
@@ -214,7 +214,7 @@ class ilPCLimitedMediaPlayerGUI
     /**
      * Update the stored player volume (called by ajax)
      */
-    protected function updateVolume()
+    private function updateVolume()
     {
         $this->preferences_repo->updateVolume($this->post->float('volume') ?? 0.5);
 
