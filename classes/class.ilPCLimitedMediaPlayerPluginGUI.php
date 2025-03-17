@@ -9,10 +9,19 @@ use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\Limit;
 use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
 use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\Stakeholder;
 use ilGlobalTemplateInterface as Gti;
+use ILIAS\UI\Factory as UiFactory;
+use ILIAS\UI\Renderer as UiRenderer;
+use ILIAS\UI\Component\Input\Container\Form\Standard as Form;
+use ilCtrlAwareStorageUploadHandler;
+use ILIAS\ResourceStorage\Services as ResourceStorage;
+use ILIAS\Refinery\Factory as Refinery;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
+ * @ilCtrl_calls: ilPCLimitedMediaPlayerPluginGUI: ilCtrlAwareStorageUploadHandler
  */
 class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 {
@@ -27,6 +36,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     public const CMD_UPDATE = 'update';
     public const CMD_CANCEL = 'cancel';
 
+
     /** @var ilPCLimitedMediaPlayerPlugin $plugin */
     protected ilPageComponentPlugin $plugin;
     private ?ilPageContent $content_object;
@@ -35,8 +45,15 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     private ilCtrlInterface $ctrl;
     private ilGlobalTemplateInterface $tpl;
+
     private ilTabsGUI $tabs;
     private ilObjUser $user;
+    private UiFactory $ui_factory;
+    private UiRenderer $ui_renderer;
+    private Refinery $refinery;
+    private ilCtrlAwareStorageUploadHandler $upload_handler;
+    private ResourceStorage $storage;
+    private RequestInterface $request;
 
     private RequestVariables $get;
     private RequestVariables $post;
@@ -54,6 +71,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $this->tpl = $DIC->tpl();
         $this->tabs = $DIC->tabs();
         $this->user = $DIC->user();
+        $this->ui_factory = $DIC->ui()->factory();
+        $this->ui_renderer = $DIC->ui()->renderer();
+        $this->refinery = $DIC->refinery();
+        $this->upload_handler = new ilCtrlAwareStorageUploadHandler(new Stakeholder());
+        $this->storage = $DIC->resourceStorage();
+        $this->request = $DIC->http()->request();
+
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
         $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $DIC->refinery());
         $this->post = new RequestVariables($DIC->http()->wrapper()->post(), $DIC->refinery());
@@ -61,19 +85,25 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     public function executeCommand(): void
     {
-        switch ($cmd = $this->ctrl->getCmd()) {
-            case self::CMD_CREATE:
-            case self::CMD_EDIT:
-            case self::CMD_UPDATE:
-            case self::CMD_CANCEL:
-                $this->$cmd();
+        switch ($class = $this->ctrl->getCmdClass()) {
+            case strtolower(ilCtrlAwareStorageUploadHandler::class):
+                $this->ctrl->forwardCommand($this->upload_handler);
+                break;
 
-                // no break
             default:
-                echo 'unknown command';
+                switch ($cmd = $this->ctrl->getCmd()) {
+                    case self::CMD_CREATE:
+                    case self::CMD_EDIT:
+                    case self::CMD_UPDATE:
+                    case self::CMD_CANCEL:
+                        $this->$cmd();
+                        break;
+
+                    default:
+                        $this->tpl->setContent('unknown command');
+                }
         }
     }
-
 
     /**
      * Show the creation form
@@ -81,7 +111,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     public function insert(): void
     {
         $form = $this->initForm(true);
-        $this->tpl->setContent($form->getHTML());
+        $this->tpl->setContent($this->ui_renderer->render($form));
     }
 
     /**
@@ -89,17 +119,16 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     public function create(): void
     {
-        $form = $this->initForm(true);
-        if ($form->checkInput()) {
-            if ($this->saveForm($form, true)) {
+        $form = $this->initForm(true)->withRequest($this->request);
+        if (!empty($data = $form->getData())) {
+            if ($this->saveProperties($form, true)) {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_created"), true);
             } else {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_FAILURE, $this->error_message, true);
             }
             $this->returnToParent();
         }
-        $form->setValuesByPost();
-        $this->tpl->setContent($form->getHtml());
+        $this->tpl->setContent($this->ui_renderer->render($form));
     }
 
     /**
@@ -109,7 +138,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     {
         $this->setTabs("edit");
         $form = $this->initForm();
-        $this->tpl->setContent($form->getHTML());
+        $this->tpl->setContent($this->ui_renderer->render($form));
     }
 
     /**
@@ -117,17 +146,16 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     public function update(): void
     {
-        $form = $this->initForm(false);
-        if ($form->checkInput()) {
-            if ($this->saveForm($form, false)) {
+        $form = $this->initForm(false)->withRequest($this->request);
+        if (!empty($data = $form->getData())) {
+            if ($this->saveProperties($form, false)) {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_modified"), true);
             } else {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_FAILURE, $this->error_message, true);
             }
             $this->returnToParent();
         }
-        $form->setValuesByPost();
-        $this->tpl->setContent($form->getHtml());
+        $this->tpl->setContent($this->ui_renderer->render($form));
     }
 
     /**
@@ -217,135 +245,64 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     /**
      * Init editing form
      */
-    protected function initForm(bool $a_create = false): ilPropertyFormGUI
+    protected function initForm(bool $create = false): Form
     {
-        $form = new ilPropertyFormGUI();
+        $props = ($create ? [] : $this->getProperties());
 
-        // title
-        $medium_title = new ilTextInputGUI($this->txt('medium_title'), 'medium_title');
-        $medium_title->setRequired(true);
-        $form->addItem($medium_title);
+        $factory = $this->ui_factory->input()->field();
+        $sections = [];
+        $fields = [];
 
-        // medium file
-        $medium_file = new ilFileInputGUI($this->txt('medium_file'), 'medium_file');
-        //$medium_file->setSuffixes(ilObjMediaObject::getRestrictedFileTypes());
-        $medium_file->setInfo($this->txt('medium_file_info'));
-        $form->addItem(($medium_file));
+        $fields['medium_title'] = $factory->text($this->txt('medium_title'))
+            ->withRequired(true)
+            ->withValue($props['medium_title'] ?? '');
+
+        $fields['medium_file'] = $factory->file($this->upload_handler, $this->txt('medium_file'))
+            ->withValue(isset($props['medium_file']) ? [$props['medium_file']] : []);
+
+        $fields['limit_plays'] = $factory->numeric($this->txt('limit_plays'))
+            ->withAdditionalTransformation($this->refinery->int()->isGreaterThanOrEqual(0))
+            ->withValue((int) $props['limit_plays'] ?? 1);
+
+        $fields['limit_context'] = $factory->radio($this->txt('limit_context'))
+            ->withOption(LimitContext::TESTPASS, $this->txt('limit_context_testpass'))
+            ->withOption(LimitContext::SESSION, $this->txt('limit_context_session'))
+            ->withOption(LimitContext::USER, $this->txt('limit_context_user'))
+            ->withValue($props['limit_context'] ?? LimitContext::TESTPASS);
+
+        $sections['general'] = $factory->section(
+            $fields,
+            $create ? $this->txt('cmd_insert') : $this->lng->txt('edit_limited_media_player')
+        );
+
+        $fields = [];
+
+        $fields['medium_startpic'] = $factory->file($this->upload_handler, $this->txt('medium_startpic'))
+            ->withValue(isset($props['medium_startpic']) ? [$props['medium_startpic']] : []);
+
+        $fields['medium_width'] = $factory->numeric($this->txt('medium_width'))
+            ->withAdditionalTransformation($this->refinery->kindlyTo()->int())
+            ->withValue($props['medium_width'] ?? 100);
+
+        $fields['medium_height'] = $factory->numeric($this->txt('medium_height'))
+            ->withAdditionalTransformation($this->refinery->kindlyTo()->int())
+            ->withValue($props['medium_height'] ?? 50);
+
+        $fields['play_mode'] = $factory->radio($this->txt('play_modal'))
+            ->withOption('0', $this->txt('play_on_page'), $this->txt('play_on_page_info'))
+            ->withOption('1', $this->txt('play_in_modal'), $this->txt('play_in_modal_info'))
+            ->withValue($props['play_modal'] ?? '0');
+
+        $fields['play_pause'] = $factory->radio($this->txt('play_pause'))
+            ->withOption('1', $this->txt('play_with_pause'), $this->txt('play_with_pause_info'))
+            ->withOption('0', $this->txt('play_without_pause'), $this->txt('play_without_pause_info'))
+            ->withValue($props['play_pause'] ?? '1');
 
 
-        // limit plays
-        $limit_plays = new ilNumberInputGUI($this->txt('limit_plays'), 'limit_plays');
-        $limit_plays->setSize(5);
-        $limit_plays->setMinValue(1);
-        $form->addItem($limit_plays);
+        $sections['details'] = $factory->section($fields, $this->txt('settings_details'));
 
-        // limit context
-        $limit_context_testpass = new ilRadioOption($this->txt('limit_context_testpass'), 'testpass');
-        $limit_context_session = new ilRadioOption($this->txt('limit_context_session'), 'session');
-        $limit_context_user = new ilRadioOption($this->txt('limit_context_user'), 'user');
-        $limit_context = new ilRadioGroupInputGUI($this->txt('limit_context'), 'limit_context');
-        $limit_context->addOption($limit_context_testpass);
-        $limit_context->addOption($limit_context_session);
-        $limit_context->addOption($limit_context_user);
-        $form->addItem($limit_context);
-
-        // details header
-        $settings_details = new ilFormSectionHeaderGUI();
-        $settings_details->setTitle($this->txt('settings_details'));
-        $form->addItem($settings_details);
-
-        // start picture
-        $medium_startpic = new ilImageFileInputGUI($this->txt('medium_startpic'), 'medium_startpic');
-        $medium_startpic->setInfo($this->txt('medium_startpic_info'));
-        $medium_startpic->setALlowDeletion(true);
-        $form->addItem($medium_startpic);
-
-        // width
-        $medium_width = new ilNumberInputGUI($this->txt('medium_width'), 'medium_width');
-        $medium_width->setInfo($this->txt('medium_width_info'));
-        $medium_width->setSize(5);
-        $medium_width->setDecimals(0);
-        $form->addItem($medium_width);
-
-        // height
-        $medium_height = new ilNumberInputGUI($this->txt('medium_height'), 'medium_height');
-        $medium_height->setInfo($this->txt('medium_height_info'));
-        $medium_height->setSize(5);
-        $medium_height->setDecimals(0);
-        $form->addItem($medium_height);
-
-        // play mode
-        $play_on_page = new ilRadioOption($this->txt('play_on_page'), '0');
-        $play_on_page->setInfo($this->txt('play_on_page_info'));
-        $play_in_modal = new ilRadioOption($this->txt('play_in_modal'), '1');
-        $play_in_modal->setInfo($this->txt('play_in_modal_info'));
-        $play_modal = new ilRadioGroupInputGUI($this->txt('play_mode'), 'play_modal');
-        $play_modal->addOption($play_on_page);
-        $play_modal->addOption($play_in_modal);
-        $form->addItem($play_modal);
-
-        // play pause
-        $play_with_pause = new ilRadioOption($this->txt('play_with_pause'), '1');
-        $play_with_pause->setInfo($this->txt('play_with_pause_info'));
-        $play_without_pause = new ilRadioOption($this->txt('play_without_pause'), '0');
-        $play_without_pause->setInfo($this->txt('play_without_pause_info'));
-        $play_pause = new ilRadioGroupInputGUI($this->txt('play_pause'), 'play_pause');
-        $play_pause->addOption($play_with_pause);
-        $play_pause->addOption($play_without_pause);
-        $form->addItem($play_pause);
-
-        // add debugging properties
-        if ($this->plugin::DEBUG) {
-            $settings_debug = new ilFormSectionHeaderGUI();
-            $settings_debug->setTitle($this->txt('settings_debug'));
-            $form->addItem($settings_debug);
-
-            foreach ($this->getDebugProperties() as $name => $value) {
-                $prop = new ilNonEditableValueGUI($name);
-                $prop->setValue($value);
-                $form->addItem($prop);
-            }
-        }
-
-        if ($a_create) {
-            $limit_plays->setValue('1');
-            $limit_context->setValue('testpass');
-            $play_modal->setValue('0');
-            $play_pause->setValue('1');
-        } else {
-            $prop = $this->getProperties();
-
-            $medium_title->setValue($prop['medium_title']);
-            $limit_plays->setValue($prop['limit_plays']);
-            $limit_context->setValue($prop['limit_context']);
-            $medium_width->setValue($prop['medium_width']);
-            $medium_height->setValue($prop['medium_height']);
-            $play_modal->setValue($prop['play_modal']);
-            $play_pause->setValue($prop['play_pause']);
-
-            if ($pageMediaObj = $this->getPageMediaObject($prop)) {
-                /** @var ilObjMediaObject $mediaObj */
-                if ($mediaObj = $pageMediaObj->getMediaObject()) {
-                    $medium_startpic->setImage($mediaObj->getVideoPreviewPic());
-                }
-            }
-
-        }
-
-        // save and cancel commands
-        if ($a_create) {
-            $this->addCreationButton($form);
-            $form->addCommandButton("cancel", $this->lng->txt("cancel"));
-            $form->setTitle($this->txt("cmd_insert"));
-        } else {
-            $form->addCommandButton("update", $this->lng->txt("save"));
-            $form->addCommandButton("cancel", $this->lng->txt("cancel"));
-            $form->setTitle($this->txt("edit_limited_media_player"));
-        }
-
-        $form->setMultipart(true);
-        $form->setFormAction($this->ctrl->getFormAction($this));
-        return $form;
+        return $this->ui_factory->input()->container()->form()->standard($this->ctrl->getFormAction($this), $sections)
+            ->withSubmitCaption($this->lng->txt($create ? 'create' : 'save'));
     }
 
 
@@ -608,7 +565,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     protected function getQuestionId(): ?int
     {
-        return $_GET['q_id'];
+        return $this->get->integer('q_id');
     }
 
     /**
