@@ -23,6 +23,11 @@ class LimitContext
         return new self($value);
     }
 
+    public static function tryFrom(string $value): ?self
+    {
+        return in_array($value, self::CASES) ? new self($value) : null;
+    }
+
     public function value(): string
     {
         return $this->value;

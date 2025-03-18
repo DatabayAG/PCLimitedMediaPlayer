@@ -18,6 +18,7 @@ use ilCtrlAwareStorageUploadHandler;
 use ILIAS\ResourceStorage\Services as ResourceStorage;
 use ILIAS\Refinery\Factory as Refinery;
 use Psr\Http\Message\RequestInterface;
+use ILIAS\Plugin\LimitedMediaPlayer\Medium;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
@@ -121,7 +122,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     {
         $form = $this->initForm(true)->withRequest($this->request);
         if (!empty($data = $form->getData())) {
-            if ($this->saveProperties($form, true)) {
+            if ($this->saveForm($data, true)) {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_created"), true);
             } else {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_FAILURE, $this->error_message, true);
@@ -148,7 +149,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     {
         $form = $this->initForm(false)->withRequest($this->request);
         if (!empty($data = $form->getData())) {
-            if ($this->saveProperties($form, false)) {
+            if ($this->saveForm($data, false)) {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_modified"), true);
             } else {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_FAILURE, $this->error_message, true);
@@ -161,80 +162,31 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     /**
      * Save the posted properties
      */
-    protected function saveForm(ilPropertyFormGUI $a_form, bool $a_create): bool
+    protected function saveForm(array $data, bool $create): bool
     {
-        // save the properties
-        $properties = array_merge($this->getProperties(), array(
-            'medium_title' => $a_form->getInput('medium_title'),
-            'limit_plays' => $a_form->getInput('limit_plays'),
-            'limit_context' => $a_form->getInput('limit_context'),
-            'medium_width' => $a_form->getInput('medium_width'),
-            'medium_height' => $a_form->getInput('medium_height'),
-            'play_modal' => $a_form->getInput('play_modal'),
-            'play_pause' => $a_form->getInput('play_pause')
-        ));
-        if ($a_create) {
-            $success = $this->createElement($properties);
-        } else {
-            $success = $this->updateElement($properties);
-        }
+        $medium = Medium::fromProperties($this->getPageId(), $this->getProperties())
+            ->setMediumTitle($data['general']['title'] ?? 'Medium')
+            ->setFileId($data['general']['title'][0] ?? '')
+            ->setLimitPlays($data['general']['limit_plays'] ?? null)
+            ->setPreviewId($data['details']['preview_id'][0] ?? null)
+            ->setWidth($data['details']['width'] ?? null)
+            ->setHeight($data['details']['height'] ?? null)
+            ->setPlayInModal($data['details']['play_in_modal'] ?? false)
+            ->setPlayWithPause($data['details']['play_with_pause'] ?? false);
 
-        if (!$success) {
-            $this->error_message = $this->txt('err_save_properties');
+        if (empty($medium->getFileId())) {
+            $this->error_message = $this->plugin->txt('err_missing_file');
             return false;
         }
 
-        // finish if no media files are uploaded
-        if (empty($_FILES['medium_file']['tmp_name'])
-            && empty($_FILES['medium_startpic']['tmp_name'])
-            && empty($_POST['medium_startpic_delete'])) {
-            return true;
+        if ($create) {
+            $success = $this->createElement($medium->toProperties());
+        } else {
+            $success = $this->updateElement($medium->toProperties());
         }
 
-        // try to update or create the media object
-        // an existing media object is replaced by a clone to avoid side effects in cloned questions
-        try {
-            $pageMediaObj = $this->getPageMediaObject();
-            if (!empty($pageMediaObj)) {
-                $mediaObj = $this->replaceMediaObject($pageMediaObj);
-            } else {
-                $pageMediaObj = $this->addPageMediaObject();
-                $mediaObj = $pageMediaObj->getMediaObject();
-            }
-
-            if (!empty($_FILES['medium_file']['tmp_name'])) {
-                $file_name = ilObjMediaObject::fixFilename($_FILES['medium_file']['name']);
-                $file = $mediaObj->getDataDirectory() . "/" . $file_name;
-                $format = ilObjMediaObject::getMimeType($file);
-                ilUtil::moveUploadedFile($_FILES['medium_file']['tmp_name'], $file_name, $file);
-
-                // set the standard item (a placeholder)
-                $this->setMediaStandardItem($mediaObj);
-
-                // set the fullscreen item (the real medium)
-                $mediaItem = $mediaObj->getMediaItem('Fullscreen');
-                if (empty($mediaItem)) {
-                    $mediaItem = new ilMediaItem();
-                    $mediaItem->setPurpose('Fullscreen');
-                    $mediaObj->addMediaItem($mediaItem);
-                }
-                @unlink($mediaObj->getDataDirectory() . '/' . $mediaItem->getLocation());
-                $mediaItem->setLocation($file_name);
-                $mediaItem->setLocationType("LocalFile");
-                $mediaItem->setFormat(ilObjMediaObject::getMimeType($file));
-            }
-
-            if (!empty($_FILES['medium_startpic']['tmp_name'])) {
-                $mediaObj->uploadVideoPreviewPic($_FILES['medium_startpic']);
-            } elseif (!empty($_POST['medium_startpic_delete'])) {
-                @unlink($mediaObj->getVideoPreviewPic());
-            }
-
-            $mediaObj->setTitle($properties['medium_title']);
-            $mediaObj->update();
-
-        } catch (Exception $e) {
-            $this->error_message = $this->txt('err_save_media_obj');
+        if (!$success) {
+            $this->error_message = $this->plugin->txt('err_save_properties');
             return false;
         }
 
@@ -247,59 +199,60 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     protected function initForm(bool $create = false): Form
     {
-        $props = ($create ? [] : $this->getProperties());
+        $medium = Medium::fromProperties($this->getPageId(), $this->getProperties());
 
         $factory = $this->ui_factory->input()->field();
         $sections = [];
         $fields = [];
 
-        $fields['medium_title'] = $factory->text($this->txt('medium_title'))
+        $fields['title'] = $factory->text($this->plugin->txt('title'))
             ->withRequired(true)
-            ->withValue($props['medium_title'] ?? '');
+            ->withValue($medium->getTitle());
 
-        $fields['medium_file'] = $factory->file($this->upload_handler, $this->txt('medium_file'))
-            ->withValue(isset($props['medium_file']) ? [$props['medium_file']] : []);
+        $fields['file_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_file'))
+            ->withValue(empty($medium->getFileId()) ? [] : [$medium->getFileId()])
+            ->withRequired(true);
 
-        $fields['limit_plays'] = $factory->numeric($this->txt('limit_plays'))
+        $fields['limit_plays'] = $factory->numeric($this->plugin->txt('limit_plays'))
             ->withAdditionalTransformation($this->refinery->int()->isGreaterThanOrEqual(0))
-            ->withValue((int) $props['limit_plays'] ?? 1);
+            ->withValue($medium->getLimitPlays());
 
-        $fields['limit_context'] = $factory->radio($this->txt('limit_context'))
-            ->withOption(LimitContext::TESTPASS, $this->txt('limit_context_testpass'))
-            ->withOption(LimitContext::SESSION, $this->txt('limit_context_session'))
-            ->withOption(LimitContext::USER, $this->txt('limit_context_user'))
-            ->withValue($props['limit_context'] ?? LimitContext::TESTPASS);
+        $fields['limit_context'] = $factory->radio($this->plugin->txt('limit_context'))
+            ->withOption(LimitContext::TESTPASS, $this->plugin->txt('limit_context_testpass'))
+            ->withOption(LimitContext::SESSION, $this->plugin->txt('limit_context_session'))
+            ->withOption(LimitContext::USER, $this->plugin->txt('limit_context_user'))
+            ->withValue($medium->getLimitContext()->value());
 
         $sections['general'] = $factory->section(
             $fields,
-            $create ? $this->txt('cmd_insert') : $this->lng->txt('edit_limited_media_player')
+            $create ? $this->plugin->txt('cmd_insert') : $this->lng->txt('edit_limited_media_player')
         );
 
         $fields = [];
 
-        $fields['medium_startpic'] = $factory->file($this->upload_handler, $this->txt('medium_startpic'))
-            ->withValue(isset($props['medium_startpic']) ? [$props['medium_startpic']] : []);
+        $fields['preview_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_startpic'))
+            ->withValue(empty($medium->getPreviewId()) ? [] : [$medium->getPreviewId()]);
 
-        $fields['medium_width'] = $factory->numeric($this->txt('medium_width'))
+        $fields['width'] = $factory->numeric($this->plugin->txt('medium_width'))
             ->withAdditionalTransformation($this->refinery->kindlyTo()->int())
-            ->withValue($props['medium_width'] ?? 100);
+            ->withValue($medium->getWidth());
 
-        $fields['medium_height'] = $factory->numeric($this->txt('medium_height'))
+        $fields['height'] = $factory->numeric($this->plugin->txt('medium_height'))
             ->withAdditionalTransformation($this->refinery->kindlyTo()->int())
-            ->withValue($props['medium_height'] ?? 50);
+            ->withValue($medium->getHeight());
 
-        $fields['play_mode'] = $factory->radio($this->txt('play_modal'))
-            ->withOption('0', $this->txt('play_on_page'), $this->txt('play_on_page_info'))
-            ->withOption('1', $this->txt('play_in_modal'), $this->txt('play_in_modal_info'))
-            ->withValue($props['play_modal'] ?? '0');
+        $fields['play_in_modal'] = $factory->radio($this->plugin->txt('play_modal'))
+            ->withOption('0', $this->plugin->txt('play_on_page'), $this->plugin->txt('play_on_page_info'))
+            ->withOption('1', $this->plugin->txt('play_in_modal'), $this->plugin->txt('play_in_modal_info'))
+            ->withValue($medium->getPlayInModal());
 
-        $fields['play_pause'] = $factory->radio($this->txt('play_pause'))
-            ->withOption('1', $this->txt('play_with_pause'), $this->txt('play_with_pause_info'))
-            ->withOption('0', $this->txt('play_without_pause'), $this->txt('play_without_pause_info'))
-            ->withValue($props['play_pause'] ?? '1');
+        $fields['play_with_pause'] = $factory->radio($this->plugin->txt('play_pause'))
+            ->withOption('1', $this->plugin->txt('play_with_pause'), $this->plugin->txt('play_with_pause_info'))
+            ->withOption('0', $this->plugin->txt('play_without_pause'), $this->plugin->txt('play_without_pause_info'))
+            ->withValue($medium->getPlayWithPause());
 
 
-        $sections['details'] = $factory->section($fields, $this->txt('settings_details'));
+        $sections['details'] = $factory->section($fields, $this->plugin->txt('settings_details'));
 
         return $this->ui_factory->input()->container()->form()->standard($this->ctrl->getFormAction($this), $sections)
             ->withSubmitCaption($this->lng->txt($create ? 'create' : 'save'));
@@ -313,14 +266,10 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     public function setTabs($a_active): void
     {
-        $this->tabs->addTab("edit", $this->txt("settings"), $this->ctrl->getLinkTarget($this, "edit"));
+        $this->tabs->addTab("edit", $this->plugin->txt("settings"), $this->ctrl->getLinkTarget($this, "edit"));
         $this->tabs->activateTab($a_active);
     }
 
-    protected function txt(string $a_var): string
-    {
-        return $this->getPlugin()->txt($a_var);
-    }
 
     /**
      * Get HTML for element
@@ -419,12 +368,12 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 // Show only a representation with meta data
                 //
                 $info = array(
-                    $this->txt('medium_file') => is_object($item) ? $item->getLocation() : '',
-                    $this->txt('limit_plays') => $a_properties['limit_plays'],
-                    $this->txt('limit_context') => $this->txt('limit_context_' . $a_properties['limit_context']),
-                    $this->txt('play_mode') => $this->txt($a_properties['play_modal'] ? 'play_in_modal' : 'play_on_page'),
-                    $this->txt('play_pause') => $a_properties['play_pause'] ?
-                        $this->txt('play_with_pause') : $this->txt('play_without_pause')
+                    $this->plugin->txt('medium_file') => is_object($item) ? $item->getLocation() : '',
+                    $this->plugin->txt('limit_plays') => $a_properties['limit_plays'],
+                    $this->plugin->txt('limit_context') => $this->plugin->txt('limit_context_' . $a_properties['limit_context']),
+                    $this->plugin->txt('play_mode') => $this->plugin->txt($a_properties['play_modal'] ? 'play_in_modal' : 'play_on_page'),
+                    $this->plugin->txt('play_pause') => $a_properties['play_pause'] ?
+                        $this->plugin->txt('play_with_pause') : $this->plugin->txt('play_without_pause')
                 );
 
                 $usage = null;
@@ -491,26 +440,26 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         if (in_array('play', $controls)) {
             $tpl->setVariable('ID_PLAY', $mob->getId());
-            $tpl->setVariable('TXT_PLAY', $this->txt("runtime_play"));
+            $tpl->setVariable('TXT_PLAY', $this->plugin->txt("runtime_play"));
             $tpl->setVariable('STATUS_PLAY', $status->value() == Status::START ? '' : 'hidden');
         }
 
         if (in_array('pause', $controls)) {
             $tpl->setVariable('ID_PAUSE', $mob->getId());
-            $tpl->setVariable('TXT_PAUSE', $this->txt("runtime_pause"));
+            $tpl->setVariable('TXT_PAUSE', $this->plugin->txt("runtime_pause"));
             $tpl->setVariable('STATUS_PAUSE', $status->value() == Status::PLAY ? '' : 'hidden');
         }
 
         if (in_array('continue', $controls)) {
             $tpl->setVariable('ID_CONTINUE', $mob->getId());
-            $tpl->setVariable('TXT_CONTINUE', $this->txt("runtime_continue"));
+            $tpl->setVariable('TXT_CONTINUE', $this->plugin->txt("runtime_continue"));
             $tpl->setVariable('STATUS_CONTINUE', $status->value() == Status::PAUSE ? '' : 'hidden');
         }
 
         if (in_array('volume', $controls)) {
             $tpl->setVariable('ID_VOLUME', $mob->getId());
             $tpl->setVariable('ICON_VOLUME', ilUtil::getImagePath('icon_mob.svg'));
-            $tpl->setVariable('TXT_VOLUME', $this->txt('runtime_volume'));
+            $tpl->setVariable('TXT_VOLUME', $this->plugin->txt('runtime_volume'));
             $tpl->setVariable('VALUE_VOLUME', $preferences_repo->getVolume() * 100);
         }
 
@@ -527,24 +476,24 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         if (isset($usage)) {
             if ($this->getViewMode() == self::VIEW_PREVIEW) {
-                $limit_plays_suffix = $this->txt('limit_plays_preview');
+                $limit_plays_suffix = $this->plugin->txt('limit_plays_preview');
             } else {
-                $limit_plays_suffix = $this->txt('limit_plays_' . $a_properties['limit_context']);
+                $limit_plays_suffix = $this->plugin->txt('limit_plays_' . $a_properties['limit_context']);
 
                 if (!$limit->isDefault()) {
-                    $limit_plays_suffix .= ' ' . $this->txt('limit_plays_adapted');
+                    $limit_plays_suffix .= ' ' . $this->plugin->txt('limit_plays_adapted');
                 }
             }
 
-            $tpl->setVariable("MAX_PLAYS", ($limit->getLimit() ?? $this->txt('runtime_no_limit'))
+            $tpl->setVariable("MAX_PLAYS", ($limit->getLimit() ?? $this->plugin->txt('runtime_no_limit'))
                 . ' ' . $limit_plays_suffix);
-            $tpl->setVariable("MAX_PLAYS_TEXT", $this->txt("runtime_max_plays"));
+            $tpl->setVariable("MAX_PLAYS_TEXT", $this->plugin->txt("runtime_max_plays"));
 
             $tpl->setVariable("CURRENT_PLAYS", (int) $usage->getPlays());
-            $tpl->setVariable("CURRENT_PLAYS_TEXT", $this->txt("runtime_plays"));
+            $tpl->setVariable("CURRENT_PLAYS_TEXT", $this->plugin->txt("runtime_plays"));
 
             $tpl->setVariable("CURRENT_SECONDS", max((int) $usage->getSeconds(), 0));
-            $tpl->setVariable("CURRENT_SECONDS_TEXT", $this->txt("runtime_seconds"));
+            $tpl->setVariable("CURRENT_SECONDS_TEXT", $this->plugin->txt("runtime_seconds"));
         }
 
         if (!empty($info)) {
@@ -560,13 +509,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         return $tpl->get();
     }
 
-    /**
-     * Get the id of the current question
-     */
-    protected function getQuestionId(): ?int
-    {
-        return $this->get->integer('q_id');
-    }
 
     /**
      * Get the Id of the current page
@@ -574,21 +516,23 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     protected function getPageId(): int
     {
-        if ($this->getViewMode() == self::VIEW_PRESENTATION) {
+        return $this->getPlugin()->getPageId();
 
-            $ref_id = $this->get->integer('ref_id', 0);
-            $sequence = $this->get->integer('sequence', 0);
-
-            $sequence_obj = $this->plugin->factory()->testSequence($ref_id);
-
-            if (empty($sequence)) {
-                $sequence = $sequence_obj->getFirstSequence();
-            }
-            return $sequence_obj->getQuestionForSequence($sequence);
-
-        } else {
-            return $this->get->integer('q_id', 0);
-        }
+        //        if ($this->getViewMode() == self::VIEW_PRESENTATION) {
+        //
+        //            $ref_id = $this->get->integer('ref_id', 0);
+        //            $sequence = $this->get->integer('sequence', 0);
+        //
+        //            $sequence_obj = $this->plugin->factory()->testSequence($ref_id);
+        //
+        //            if (empty($sequence)) {
+        //                $sequence = $sequence_obj->getFirstSequence();
+        //            }
+        //            return $sequence_obj->getQuestionForSequence($sequence);
+        //
+        //        } else {
+        //            return $this->get->integer('q_id', 0);
+        //        }
     }
 
     /**
@@ -634,207 +578,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
 
     /**
-     * Get the hierarchical ID of the page content
-     */
-    protected function getHierId(): string
-    {
-        return $this->getPCGUI()->getHierId();
-    }
-
-    /**
      * Get the id of the parent object
      * Currently the object id of the pool or test
      */
     protected function getParentId(): int
     {
-        return ilObject::_lookupObjectId($this->get->integer('ref_id', 0));
+        return $this->getPlugin()->getParentId();
+        //return ilObject::_lookupObjectId($this->get->integer('ref_id', 0));
     }
 
-    /**
-     * Get the content object of this page content
-     */
-    protected function getContentObject(): ilPageContent
-    {
-        if ($this->content_object === null) {
-            $this->content_object = $this->getPCGUI()->getContentObject();
-            $this->content_object->setPcId($this->content_object->readPCId());
-        }
-
-        return $this->content_object;
-    }
-
-    /**
-     * get the page object
-     */
-    protected function getPageObject(): ?ilPageObject
-    {
-        if (isset($this->page_obj)) {
-            return $this->page_obj;
-        }
-
-        if ($contentObj = $this->getContentObject()) {
-            // get the page object from editor context
-            // this should be possible for 'create' 'edit' and 'update'
-            $this->page_obj = $contentObj->getPage();
-        }
-
-        if (!isset($this->page_obj)) {
-            $page_id = $this->getPageId();
-            if (!empty($page_id)) {
-                // get the page object from question id in url
-                // this should be possible in single question preview and in test run
-                $this->page_obj = new ilAssQuestionPage($page_id);
-            }
-        }
-
-        return $this->page_obj;
-    }
-
-    /**
-     * Get the linked media object from the current page
-     * @param array|null    $a_properties   (must be provided when called by getElementHTML)
-     */
-    protected function getPageMediaObject(?array $a_properties = null): ?ilPCMediaObject
-    {
-        if (!isset($a_properties)) {
-            $a_properties = $this->getProperties();
-        }
-
-        if ($a_properties['medium_pcid']) {
-            if ($pageObj = $this->getPageObject()) {
-                $pageObj->buildDom();
-
-                /** @var ilPCMediaObject $pageMediaObj */
-                $pageMediaObj = $pageObj->getContentObject('', $a_properties['medium_pcid']);
-
-                return $pageMediaObj;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Add a new media object to the page
-     */
-    private function addPageMediaObject(): ilPCMediaObject
-    {
-        $pageObj = $this->getPageObject();
-        $pageObj->read();
-        $pageObj->buildDom(true);
-        $pageObj->addHierIDs();
-
-        $mediaObj = new ilObjMediaObject();
-        $mediaObj->create();
-        $mediaObj->createDirectory();
-        $mediaItem = new ilMediaItem();
-        $mediaItem->setPurpose('Standard');
-        $mediaObj->addMediaItem($mediaItem);
-        $mediaObj->update();
-
-        $pageMediaObj = new ilPCMediaObject($pageObj);
-        $pageMediaObj->setDom($pageObj->getDom());
-        $pageMediaObj->setMediaObject($mediaObj);
-        $pageMediaObj->createAlias($pageObj, $this->getHierId());
-        $pageObj->update();
-
-        // a new pcid is written to the dom in the page update
-        $pageMediaObj->setPcId($pageMediaObj->readPCId());
-        $pageMediaObj->disable();
-
-        // refresh the pcid of the page media object in the page content of the plugin
-        $contentObj = $this->getContentObject();
-        $contentObj->setPage($pageObj);
-        $contentObj->dom = $pageObj->getDom();
-        $contentObj->setNode($pageObj->getContentNode('', $contentObj->getPCId()));
-
-        $properties = (array) $contentObj->getProperties();
-        $properties['medium_pcid'] =  $pageMediaObj->getPCId();
-        $contentObj->setProperties($properties);
-        $pageObj->update();
-
-        return $pageMediaObj;
-    }
-
-    /**
-     * Replace the media object reference by a clone if it is used on another page, too
-     * This avoids side effects with other limited media
-     */
-    private function replaceMediaObject(ilPCMediaObject $pageMediaObject): ilObjMediaObject
-    {
-        /** @var ilObjMediaObject $mediaObj */
-        if ($mediaObj = $pageMediaObject->getMediaObject()) {
-            // create a new media object if it is used on other pages
-            // question may have been duplicated before
-            if (count($mediaObj->getUsages(false)) > 1) {
-                $mediaObj = $mediaObj->duplicate();
-            }
-        } else {
-            $mediaObj = new ilObjMediaObject();
-            $mediaObj->create();
-            $mediaObj->createDirectory();
-            $mediaItem = new ilMediaItem();
-            $mediaItem->setPurpose('Standard');
-            $mediaObj->addMediaItem($mediaItem);
-            $mediaObj->update();
-        }
-
-        $pageObj = $this->getPageObject();
-        $pageObj->buildDom(true);
-        $pageObj->addHierIDs();
-
-        $pageMediaObject->setPage($pageObj);
-        $pageMediaObject->setDom($pageObj->getDom());
-        $pageMediaObject->setMediaObject($mediaObj);
-        $pageMediaObject->setNode($pageObj->getContentNode('', $pageMediaObject->readPCId()));
-        $pageMediaObject->updateObjectReference();
-
-        $pageObj->update();
-
-        return $mediaObj;
-    }
-
-    /**
-     * Set the standard item of the medium
-     * The standard item is displayed in the deactivated block of the media object
-     * This function will get obsolete when the media object can be assigned in the background
-     */
-    private function setMediaStandardItem(ilObjMediaObject $mediaObj): void
-    {
-        $standardItem = $mediaObj->getMediaItem('Standard');
-        if (empty($standardItem)) {
-            $standardItem = new ilMediaItem();
-            $standardItem->setPurpose('Standard');
-            $mediaObj->addMediaItem($standardItem);
-        }
-        $standard_name = "mcst_preview.svg";
-        $standard_path = $mediaObj->getDataDirectory() . '/' . $standard_name;
-        @unlink($standardItem->getLocation());
-        @copy(ilUtil::getImagePath('mcst_preview.svg'), $standard_path);
-        $standardItem->setLocation($standard_name);
-        $standardItem->setLocationType("LocalFile");
-        $standardItem->setHeight('0');
-        $standardItem->setFormat(ilObjMediaObject::getMimeType($standard_path));
-        $standardItem->setCaption($this->txt('medium_edit_notice'));
-    }
-
-    private function getDebugProperties(): array
-    {
-        if (!$this->plugin::DEBUG) {
-            return[];
-        }
-
-        $properties = [];
-        $properties['debug_mode'] = $this->getMode();
-        $properties['debug_page_id'] = $this->getPageId();
-        $properties['debug_hier_id'] = $this->getPCGUI()->getHierId();
-
-        if ($co = $this->getPCGUI()->getContentObject()) {
-            $properties['debug_co'] = get_class($co);
-            $properties['debug_pcid'] = $co->getPCId();
-            $properties['debug_pg'] = get_class($co->getPage());
-        }
-
-        return $properties;
-    }
 }
