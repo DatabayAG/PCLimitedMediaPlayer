@@ -15,20 +15,20 @@ class UsageRepo
     private ilDBInterface $db;
     private int $parent_id;
     private int $page_id;
-    private int $mob_id;
+    private string $file_id;
     private LimitContext $limit_context;
 
     public function __construct(
         ilDBInterface $db,
         int $parent_id,
         int $page_id,
-        int $mob_id,
+        string $file_id,
         LimitContext $limit_context
     ) {
         $this->db = $db;
         $this->parent_id = $parent_id;
         $this->page_id = $page_id;
-        $this->mob_id = $mob_id;
+        $this->file_id = $file_id;
         $this->limit_context = $limit_context;
     }
 
@@ -37,8 +37,8 @@ class UsageRepo
         switch ($this->limit_context->value()) {
 
             case  LimitContext::SESSION:
-                $plays = ilSession::get('limply_plays-'. $this->parent_id.'-'.$this->page_id .'-'.$this->mob_id .'-'.$user_id) ?? 0;
-                $seconds = ilSession::get('limply_seconds-'. $this->parent_id.'-'.$this->page_id .'-'.$this->mob_id .'-'.$user_id) ?? null;
+                $plays = ilSession::get('limply_plays-'. $this->parent_id.'-'.$this->page_id .'-'.$this->file_id .'-'.$user_id) ?? 0;
+                $seconds = ilSession::get('limply_seconds-'. $this->parent_id.'-'.$this->page_id .'-'.$this->file_id .'-'.$user_id) ?? null;
                 $pass = null;
                 $active_id = null;
                 break;
@@ -47,11 +47,11 @@ class UsageRepo
             case LimitContext::TESTPASS:
             default:
                 $query = "SELECT plays, seconds, pass, active_id FROM {$this::TABLE} 
-                WHERE parent_id = %s AND page_id = %s AND mob_id =  %s AND user_id = %s";
+                WHERE parent_id = %s AND page_id = %s AND file_id =  %s AND user_id = %s";
 
                 $res = $this->db->queryF($query,
-                    ['integer', 'integer', 'integer', 'integer'],
-                    [$this->parent_id, $this->page_id, $this->mob_id, $user_id]);
+                    ['integer', 'integer', 'text', 'integer'],
+                    [$this->parent_id, $this->page_id, $this->file_id, $user_id]);
 
                 $row = (array) $this->db->fetchAssoc($res);
                 $plays = $row['plays'] ?? 0;
@@ -61,7 +61,7 @@ class UsageRepo
                 break;
         }
 
-        return $this->changeByContext(new Usage($user_id, $this->parent_id, $this->page_id, $this->mob_id,
+        return $this->changeByContext(new Usage($user_id, $this->parent_id, $this->page_id, $this->file_id,
             (int) $plays,
             isset($seconds) ? (float) $seconds : null,
             isset($pass) ? (int) $pass : null,
@@ -76,10 +76,10 @@ class UsageRepo
         switch ($this->limit_context->value()) {
 
             case LimitContext::SESSION:
-                ilSession::set('limply_plays-'. $usage->getParentId().'-'.$usage->getPageId() .'-'.$usage->getMobId() .'-'. $usage->getUserId(),
+                ilSession::set('limply_plays-'. $usage->getParentId().'-'.$usage->getPageId() .'-'.$usage->getFileId() .'-'. $usage->getUserId(),
                     $usage->getPlays()
                 );
-                ilSession::set('limply_seconds-'. $usage->getParentId().'-'.$usage->getPageId() .'-'.$usage->getMobId() .'-'. $usage->getUserId(),
+                ilSession::set('limply_seconds-'. $usage->getParentId().'-'.$usage->getPageId() .'-'.$usage->getFileId() .'-'. $usage->getUserId(),
                     $usage->getPlays()
                 );
                 break;
@@ -92,7 +92,7 @@ class UsageRepo
                 array(
                     'parent_id' => array('integer', $usage->getParentId()),
                     'page_id' => array('integer', $usage->getPageId()),
-                    'mob_id' => array('integer', $usage->getMobId()),
+                    'file_id' => array('integer', $usage->getFileId()),
                     'user_id' => array('integer', $usage->getUserId()),
                 ),
                 array(
@@ -104,8 +104,6 @@ class UsageRepo
             );
         }
     }
-
-
 
     /**
      * Change the usage if the status of the context has changed
@@ -119,7 +117,7 @@ class UsageRepo
             $pass = ilObjTest::_getPass($active_id);
 
             if ( $usage->getPass() !== $pass || $usage->getActiveId() !== $active_id) {
-                return new Usage($usage->getUserId(), $usage->getParentId(), $usage->getPageId(), $usage->getMobId(),
+                return new Usage($usage->getUserId(), $usage->getParentId(), $usage->getPageId(), $usage->getFileId(),
                     0, null, $pass, isset($active_id) ? (int) $active_id : null
                 );
             }

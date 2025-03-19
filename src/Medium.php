@@ -63,12 +63,6 @@ class Medium
     }
 
 
-    public function getId(): string
-    {
-        return $this->getFileId();
-    }
-
-
     public function getPageId(): int
     {
         return $this->page_id;

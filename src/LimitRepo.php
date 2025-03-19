@@ -47,7 +47,7 @@ class LimitRepo
             . implode(' AND ', [
                 $this->strict('parent_id', $this->parent_id),
                 $this->lax('page_id', $default->getPageId()),
-                $this->lax('mob_id', $default->getMobId()),
+                $this->lax('file_id', $default->getFileId()),
                 $this->lax('user_id', $default->getUserId())
             ]);
 

@@ -12,7 +12,7 @@ class Usage
     private int $user_id;
     private int $parent_id;
     private int $page_id;
-    private int $mob_id;
+    private string $file_id;
     private int $plays;
     private ?float $seconds;
     private ?int $pass;
@@ -22,7 +22,7 @@ class Usage
         int $user_id,
         int $parent_id,
         int $page_id,
-        int $mob_id,
+        string $file_id,
         int $plays = 0,
         ?float $seconds = null,
         ?int $pass = null,
@@ -31,7 +31,7 @@ class Usage
         $this->user_id = $user_id;
         $this->parent_id = $parent_id;
         $this->page_id = $page_id;
-        $this->mob_id = $mob_id;
+        $this->file_id = $file_id;
         $this->plays = $plays;
         $this->seconds = $seconds;
         $this->pass = $pass;
@@ -63,11 +63,11 @@ class Usage
     }
 
     /**
-     * ID of the media object
+     * ID of the file resource
      */
-    public function getMobId(): int
+    public function getFileId(): string
     {
-        return $this->mob_id;
+        return $this->file_id;
     }
 
     /**
@@ -90,7 +90,7 @@ class Usage
 
     /**
      * Test pass of the counted uses
-     * (null if context is not a testpass or medium is not yet replayed)
+     * (null if context is not a test pass or medium is not yet replayed)
      */
     public function getPass(): ?int
     {
@@ -99,7 +99,7 @@ class Usage
 
     /**
      * Active_id from the currently saved passes
-     * (null if context is not a testpass or medium is not yet replayed)
+     * (null if context is not a test pass or medium is not yet replayed)
      */
     public function getActiveId(): ?int
     {

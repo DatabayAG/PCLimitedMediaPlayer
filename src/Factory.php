@@ -10,7 +10,7 @@ use ilTestSequence;
 use ilTestSequenceFactory;
 use ilTestSessionFactory;
 use ilObjTest;
-use \ILIAS\Refinery\Factory as Refinery;
+use ILIAS\Refinery\Factory as Refinery;
 use ilComponentRepository;
 use ilLanguage;
 use ilTestSession;
@@ -38,12 +38,11 @@ class Factory
     public function usageRepo(
         int $parent_id,
         int $page_id,
-        int $mob_id,
+        string $file_id,
         LimitContext $limit_context
-    ): UsageRepo
-    {
-        return $this->instances[UsageRepo::class][$parent_id][$page_id][$mob_id][$limit_context->value()] ??
-            new UsageRepo($this->db, $parent_id, $page_id, $mob_id, $limit_context);
+    ): UsageRepo {
+        return $this->instances[UsageRepo::class][$parent_id][$page_id][$file_id][$limit_context->value()] ??
+            new UsageRepo($this->db, $parent_id, $page_id, $file_id, $limit_context);
     }
 
     public function LimitRepo(int $parent_id): LimitRepo

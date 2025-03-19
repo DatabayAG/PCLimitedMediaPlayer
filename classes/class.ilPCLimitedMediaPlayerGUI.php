@@ -36,15 +36,13 @@ class ilPCLimitedMediaPlayerGUI
      */
     private int $parent_id;
     private int $page_id;
-    private int $mob_id;
-    private string $file;
-    private string $mime;
-    private string $startpic;
+    private string $file_id;
+    private string $preview_id;
     private int $height;
     private int $width;
     private string $limit_context;
     private int $limit_plays;
-    private bool $play_pause;
+    private bool $play_with_pause;
 
     /**
      * Internal status variables
@@ -67,17 +65,15 @@ class ilPCLimitedMediaPlayerGUI
 
         $this->parent_id = (int) $this->get->integer('parent_id');
         $this->page_id = (int) $this->get->integer('page_id');
-        $this->mob_id = (int) $this->get->integer('mob_id');
-        $this->file = (string) $this->get->string('file');
-        $this->mime = (string) $this->get->string('mime');
-        $this->startpic = (string) $this->get->string('startpic');
+        $this->file_id = (string) $this->get->string('file_id');
+        $this->preview_id = (string) $this->get->string('preview_id');
         $this->height = (int) $this->get->integer('height');
         $this->width = (int) $this->get->integer('width');
         $this->limit_context = (string) $this->get->string('limit_context');
         $this->limit_plays = (int) $this->get->integer('limit_plays');
-        $this->play_pause = (bool) $this->get->bool('play_pause');
+        $this->play_with_pause = (bool) $this->get->bool('play_with_pause');
 
-        $this->usage_repo = $this->plugin->factory()->usageRepo($this->parent_id, $this->page_id, $this->mob_id, LimitContext::from($this->limit_context));
+        $this->usage_repo = $this->plugin->factory()->usageRepo($this->parent_id, $this->page_id, $this->file_id, LimitContext::from($this->limit_context));
         $this->preferences_repo = $this->plugin->factory()->preferencesRepo();
         $this->usage = $this->usage_repo->get($DIC->user()->getId());
         $this->volume = $this->preferences_repo->getVolume();
@@ -104,29 +100,27 @@ class ilPCLimitedMediaPlayerGUI
     private function showPlayer()
     {
         // notify the page view and adapt status
-        $this->usage->setPageView($this->play_pause);
+        $this->usage->setPageView($this->play_with_pause);
         $this->current_plays = (int) $this->usage->getPlays();
         $this->current_seconds = (int) $this->usage->getSeconds();
-        $this->status = $this->usage->getStatus($this->limit_plays, $this->play_pause);
+        $this->status = $this->usage->getStatus($this->limit_plays, $this->play_with_pause);
 
-        $medium_path = './data/' . CLIENT_ID . '/mobs/mm_' . $this->mob_id . '/' . $this->file;
-        if (class_exists('ilWACSignedPath')) {
-            $medium_path = ilWACSignedPath::signFile($medium_path);
-        }
 
-        if ($this->startpic) {
-            $startpic_path = './data/' . CLIENT_ID . '/mobs/mm_' . $this->mob_id . '/' . $this->startpic;
-            if (class_exists('ilWACSignedPath')) {
-                $startpic_path = ilWACSignedPath::signFile($startpic_path);
-            }
+        // determine files
+
+        $file_path = ilWACSignedPath::signFile('');
+        $mime = '';
+
+        if ($this->preview_id) {
+            $preview_path = ilWACSignedPath::signFile('');
         } else {
-            $startpic_path = ilUtil::getImagePath('mcst_preview.svg');
+            $preview_path = ilUtil::getImagePath('mcst_preview.svg');
         }
 
         $tpl = $this->plugin->getTemplate("tpl.player.html");
 
-        $tpl->setCurrentBlock('startpic');
-        $tpl->setVariable("FILE", $startpic_path);
+        $tpl->setCurrentBlock('preview');
+        $tpl->setVariable("FILE", $preview_path);
         $tpl->setVariable("HEIGHT", $this->height);
         $tpl->setVariable("WIDTH", $this->width);
         $tpl->parseCurrentBlock();
@@ -143,15 +137,15 @@ class ilPCLimitedMediaPlayerGUI
         $this->ctrl->setParameter($this, 'parent_id', $this->parent_id);
         $this->ctrl->setParameter($this, 'page_id', $this->page_id);
         $this->ctrl->setParameter($this, 'parent_id', $this->parent_id);
-        $this->ctrl->setParameter($this, 'mob_id', $this->mob_id);
+        $this->ctrl->setParameter($this, 'file_id', $this->file_id);
 
         $update_url = $this->ctrl->getLinkTarget($this, 'updateUsage');
         $volume_url = $this->ctrl->getLinkTarget($this, 'updateVolume');
 
         $config = array(
-            'type' => substr($this->mime, 0, 5) == 'audio' ? 'audio' : 'video',
-            'mob_id' => $this->mob_id,
-            'play_pause' => $this->play_pause,
+            'type' => substr($mime, 0, 5) == 'audio' ? 'audio' : 'video',
+            'file_id' => $this->file_id,
+            'play_with_pause' => $this->play_with_pause,
             'current_plays' => $this->current_plays,
             'current_seconds' => $this->current_seconds,
             'status' => $this->status,
@@ -161,10 +155,10 @@ class ilPCLimitedMediaPlayerGUI
         );
 
         $tpl->setCurrentBlock($config['type']);
-        $tpl->setVariable("FILE", $medium_path);
+        $tpl->setVariable("FILE", $file_path);
         $tpl->setVariable("WIDTH", $this->width);
         $tpl->setVariable("HEIGHT", $this->height);
-        $tpl->setVariable("MIME", $this->mime);
+        $tpl->setVariable("MIME", $mime);
         $tpl->parseCurrentBlock();
 
         $scripts = [iljQueryUtil::getLocaljQueryPath()];

@@ -21,8 +21,8 @@ ilPCLimitedMediaPlayerFrame = new function() {
      */
     var data = {
         type: 'audio',
-        mob_id: 0,
-        play_pause: 0,
+        file_id: 0,
+        play_with_pause: 0,
         current_plays: 0,
         current_seconds: null,
         status: 'limit',

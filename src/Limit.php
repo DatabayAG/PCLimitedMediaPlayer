@@ -13,18 +13,18 @@ class Limit
 {
     private int $parent_id;
     private ?int $page_id;
-    private ?int $mob_id;
+    private ?int $file_id;
     private ?int $user_id;
-    private ?int $limit;
+    private ?int $plays;
     private bool $default = false;
 
-    public function __construct(int $parent_id, ?int $page_id, ?int $mob_id, ?int $user_id, ?int $limit, bool $default = false)
+    public function __construct(int $parent_id, ?int $page_id, ?string $file_id, ?int $user_id, ?int $plays, bool $default = false)
     {
         $this->parent_id = $parent_id;
         $this->page_id = $page_id;
-        $this->mob_id = $mob_id;
+        $this->file_id = $file_id;
         $this->user_id = $user_id;
-        $this->limit = $limit;
+        $this->plays = $plays;
         $this->default = $default;
     }
 
@@ -38,9 +38,9 @@ class Limit
         return $this->page_id;
     }
 
-    public function getMobId(): ?int
+    public function getFileId(): ?string
     {
-        return $this->mob_id;
+        return $this->file_id;
     }
 
     public function getUserId(): ?int
@@ -48,14 +48,14 @@ class Limit
         return $this->user_id;
     }
 
-    public function getLimit(): ?int
+    public function getPlays(): ?int
     {
-        return $this->limit;
+        return $this->plays;
     }
 
-    public function setLimit(?int $limit): self
+    public function setPlays(?int $plays): self
     {
-        $this->limit = $limit;
+        $this->plays = $plays;
         return $this;
     }
 
@@ -74,16 +74,16 @@ class Limit
         }
 
         switch (true) {
-            case $this->user_id !== null && $this->mob_id !== null:
+            case $this->user_id !== null && $this->file_id !== null:
                 return 0;   // one user one medium
 
-            case $this->user_id !== null && $this->mob_id === null:
+            case $this->user_id !== null && $this->file_id === null:
                 return 1;   // one user all media
 
-            case $this->user_id === null && $this->mob_id !== null:
+            case $this->user_id === null && $this->file_id !== null:
                 return 2;   // all user one medium
 
-            case $this->user_id === null && $this->mob_id === null:
+            case $this->user_id === null && $this->file_id === null:
             default:
                 return 3;   // all user all media
         }

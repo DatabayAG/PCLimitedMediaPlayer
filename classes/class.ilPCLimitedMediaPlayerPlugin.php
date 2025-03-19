@@ -27,6 +27,16 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
         return [];
     }
 
+    public function uninstall(): bool
+    {
+        if (parent::uninstall()) {
+            $update = new \ILIAS\Plugin\LimitedMediaPlayer\DbUpdate();
+            $update->prepare($this->db);
+            $update->uninstall();
+        }
+        return true;
+    }
+
     public function factory(): Factory
     {
         return $this->factory ?? new Factory();
