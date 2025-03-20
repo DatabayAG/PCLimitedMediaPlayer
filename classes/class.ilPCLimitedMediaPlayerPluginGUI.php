@@ -17,7 +17,7 @@ use Psr\Http\Message\RequestInterface;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
- * @ilCtrl_calls: ilPCLimitedMediaPlayerPluginGUI: ilCtrlAwareStorageUploadHandler
+ * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilUIPluginRouterGUI
  */
 class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 {
@@ -27,6 +27,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     public const VIEW_PRESENTATION = 'presentation';
     public const VIEW_PREVIEW = 'preview';
 
+    public const CMD_CREATE_PLUG = 'create_plug'; // needed for the page editor this way
     public const CMD_CREATE = 'create';
     public const CMD_EDIT = 'edit';
     public const CMD_UPDATE = 'update';
@@ -60,13 +61,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         parent::__construct();
 
         $this->ctrl = $DIC->ctrl();
-        $this->tpl = $DIC->tpl();
+        $this->tpl = $DIC->ui()->mainTemplate();
         $this->tabs = $DIC->tabs();
         $this->user = $DIC->user();
         $this->ui_factory = $DIC->ui()->factory();
         $this->ui_renderer = $DIC->ui()->renderer();
         $this->refinery = $DIC->refinery();
-        $this->upload_handler = new ilCtrlAwareStorageUploadHandler(new Stakeholder());
+        $this->upload_handler = new ilPCLimitedMediaPlayerUploadHandlerGUI(new Stakeholder());
         $this->request = $DIC->http()->request();
 
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
@@ -75,13 +76,17 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     public function executeCommand(): void
     {
         switch ($class = $this->ctrl->getCmdClass()) {
-            case strtolower(ilCtrlAwareStorageUploadHandler::class):
+            case strtolower(ilPCLimitedMediaPlayerUploadHandlerGUI::class):
                 $this->ctrl->forwardCommand($this->upload_handler);
                 break;
 
             default:
                 switch ($cmd = $this->ctrl->getCmd()) {
+                    case self::CMD_CREATE_PLUG:
                     case self::CMD_CREATE:
+                        $this->create();
+                        break;
+
                     case self::CMD_EDIT:
                     case self::CMD_UPDATE:
                     case self::CMD_CANCEL:
@@ -193,13 +198,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $sections = [];
         $fields = [];
 
-        $fields['title'] = $factory->text($this->plugin->txt('title'))
+        $fields['title'] = $factory->text($this->plugin->txt('medium_title'))
             ->withRequired(true)
             ->withValue($medium->getTitle());
 
-        $fields['file_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_file'))
-            ->withValue(empty($medium->getFileId()) ? [] : [$medium->getFileId()])
-            ->withRequired(true);
+        //        $fields['file_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_file'))
+        //            ->withValue(empty($medium->getFileId()) ? [] : [$medium->getFileId()])
+        //            ->withRequired(true);
 
         $fields['limit_plays'] = $factory->numeric($this->plugin->txt('limit_plays'))
             ->withAdditionalTransformation($this->refinery->int()->isGreaterThanOrEqual(0))
@@ -218,31 +223,36 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         $fields = [];
 
-        $fields['preview_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_startpic'))
-            ->withValue(empty($medium->getPreviewId()) ? [] : [$medium->getPreviewId()]);
+        //        $fields['preview_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_startpic'))
+        //            ->withValue(empty($medium->getPreviewId()) ? [] : [$medium->getPreviewId()]);
 
         $fields['width'] = $factory->numeric($this->plugin->txt('medium_width'))
-            ->withAdditionalTransformation($this->refinery->kindlyTo()->int())
+            //->withAdditionalTransformation($this->refinery->kindlyTo()->int())
             ->withValue($medium->getWidth());
 
         $fields['height'] = $factory->numeric($this->plugin->txt('medium_height'))
-            ->withAdditionalTransformation($this->refinery->kindlyTo()->int())
+            //->withAdditionalTransformation($this->refinery->kindlyTo()->int())
             ->withValue($medium->getHeight());
 
-        $fields['play_in_modal'] = $factory->radio($this->plugin->txt('play_modal'))
+        $fields['play_in_modal'] = $factory->radio($this->plugin->txt('play_in_modal'))
             ->withOption('0', $this->plugin->txt('play_on_page'), $this->plugin->txt('play_on_page_info'))
             ->withOption('1', $this->plugin->txt('play_in_modal'), $this->plugin->txt('play_in_modal_info'))
+            ->withAdditionalTransformation($this->refinery->kindlyTo()->bool())
             ->withValue($medium->getPlayInModal());
 
         $fields['play_with_pause'] = $factory->radio($this->plugin->txt('play_pause'))
             ->withOption('1', $this->plugin->txt('play_with_pause'), $this->plugin->txt('play_with_pause_info'))
             ->withOption('0', $this->plugin->txt('play_without_pause'), $this->plugin->txt('play_without_pause_info'))
+            ->withAdditionalTransformation($this->refinery->kindlyTo()->bool())
             ->withValue($medium->getPlayWithPause());
 
 
         $sections['details'] = $factory->section($fields, $this->plugin->txt('settings_details'));
 
-        return $this->ui_factory->input()->container()->form()->standard($this->ctrl->getFormAction($this), $sections)
+        return $this->ui_factory->input()->container()->form()->standard($this->ctrl->getFormAction(
+            $this,
+            $create ? self::CMD_CREATE : self::CMD_UPDATE
+        ), $sections)
             ->withSubmitCaption($this->lng->txt($create ? 'create' : 'save'));
     }
 

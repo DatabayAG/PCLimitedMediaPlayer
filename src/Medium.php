@@ -29,6 +29,16 @@ class Medium
         bool $play_in_modal,
         bool $play_with_pause
     ) {
+        $this->page_id = $page_id;
+        $this->file_id = $file_id;
+        $this->preview_id = $preview_id;
+        $this->title = $title;
+        $this->limit_plays = $limit_plays;
+        $this->limit_context = $limit_context;
+        $this->width = $width;
+        $this->height = $height;
+        $this->play_in_modal = $play_in_modal;
+        $this->play_with_pause = $play_with_pause;
     }
 
     public static function fromProperties(int $page_id, array $properties): Medium
@@ -39,7 +49,7 @@ class Medium
             empty($properties['preview_id']) ? null : (string) $properties['preview_id'],
             empty($properties['title']) ? '' : (string) $properties['title'],
             empty($properties['limit_plays']) ? null : (int) $properties['limit_plays'],
-            LimitContext::tryFrom($properties['limit_context'] ?? ''),
+            LimitContext::tryFrom($properties['limit_context'] ?? '') ?? LimitContext::from(LimitContext::TESTPASS),
             empty($properties['width']) ? null : (int) $properties['width'],
             empty($properties['height']) ? null : (int) $properties['height'],
             empty($properties['play_in_modal']) ? false : (bool) $properties['play_in_modal'],

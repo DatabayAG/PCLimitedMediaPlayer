@@ -8,6 +8,7 @@ use ilDatabaseUpdateSteps;
 use ilDBInterface;
 use ilDBStepExecutionDB;
 use ilDBStepReader;
+use Exception;
 
 class DbUpdate implements ilDatabaseUpdateSteps
 {
@@ -32,7 +33,13 @@ class DbUpdate implements ilDatabaseUpdateSteps
             }
             $execution_log->started(self::class, $step);
             $method = 'step_' . $step;
-            $this->$method();
+            try {
+                $this->$method();
+            }
+            catch (Exception $e) {
+                $this->revertStep($step);
+                throw $e;
+            }
             $execution_log->finished(self::class, $step);
         }
     }
@@ -44,23 +51,32 @@ class DbUpdate implements ilDatabaseUpdateSteps
         $this->db->manipulateF("DELETE FROM il_db_steps WHERE class = %s", ['text'], [self::class]);
     }
 
+    private function revertStep(int $step): void
+    {
+        $this->db->manipulateF("DELETE FROM il_db_steps WHERE class = %s AND step = %s",
+            ['text', 'integer'], [self::class, $step]);
+    }
+
     /**
      * Table for usage recording
      */
     public function step_1(): void
     {
+        // step should be repeatable until everything is created
+        $this->db->dropTable('limply_uses', false);
+
         $this->db->createTable(
             'limply_uses',
             [
-            'parent_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-            'page_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-            'file_id'       => ['type' => 'string',     'length' => 64, 'notnull' => true],
-            'user_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-            'plays'         => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-            'seconds'       => ['type' => 'float',                      'notnull' => false, 'default' => null],
-            'pass'          => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
-            'active_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
-        ],
+                'parent_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'page_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'file_id'       => ['type' => 'text',       'length' => 64, 'notnull' => true],
+                'user_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'plays'         => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'seconds'       => ['type' => 'float',                      'notnull' => false, 'default' => null],
+                'pass'          => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+                'active_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+            ],
             false
         );
         $this->db->addPrimaryKey('limply_uses', ['parent_id', 'page_id', 'file_id', 'user_id']);
@@ -101,13 +117,16 @@ class DbUpdate implements ilDatabaseUpdateSteps
      */
     public function step_3(): void
     {
+        // step should be repeatable until everything is created
+        $this->db->dropTable('limply_limit', false);
+
         $this->db->createTable(
             'limply_limit',
             [
                 'id'            => ['type' => 'integer',    'length' => 4,  'notnull' => true],
                 'parent_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => true],
                 'page_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
-                'file_id'       => ['type' => 'string',     'length' => 64, 'notnull' => false, 'default' => null],
+                'file_id'       => ['type' => 'text',       'length' => 64, 'notnull' => false, 'default' => null],
                 'user_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
                 'plays'         => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
             ],
@@ -143,14 +162,14 @@ class DbUpdate implements ilDatabaseUpdateSteps
                 ]);
             }
 
-            $this->db->dropTable('copg_pgcp_limply_uses');
+            $this->db->dropTable('copg_pgcp_limply_limit');
         }
     }
 
     /**
      * todo: Migrate existing media to file resources
      */
-    public function step_5(): void
+    public function _step_5(): void
     {
         //  search for page contents
         //  extract the parameters
