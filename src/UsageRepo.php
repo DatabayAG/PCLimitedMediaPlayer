@@ -7,10 +7,11 @@ namespace ILIAS\Plugin\LimitedMediaPlayer;
 use ilDBInterface;
 use ilSession;
 use ilObjTest;
+use ilDBConstants;
 
 class UsageRepo
 {
-    private const TABLE = 'copg_pgcp_limply_uses';
+    private const TABLE = 'limply_uses';
 
     private ilDBInterface $db;
     private int $parent_id;
@@ -36,9 +37,9 @@ class UsageRepo
     {
         switch ($this->limit_context->value()) {
 
-            case  LimitContext::SESSION:
-                $plays = ilSession::get('limply_plays-'. $this->parent_id.'-'.$this->page_id .'-'.$this->file_id .'-'.$user_id) ?? 0;
-                $seconds = ilSession::get('limply_seconds-'. $this->parent_id.'-'.$this->page_id .'-'.$this->file_id .'-'.$user_id) ?? null;
+            case LimitContext::SESSION:
+                $plays = ilSession::get('limply_plays-' . $this->parent_id . '-' . $this->page_id . '-' . $this->file_id . '-' . $user_id) ?? 0;
+                $seconds = ilSession::get('limply_seconds-' . $this->parent_id . '-' . $this->page_id . '-' . $this->file_id . '-' . $user_id) ?? null;
                 $pass = null;
                 $active_id = null;
                 break;
@@ -46,12 +47,14 @@ class UsageRepo
             case LimitContext::USER:
             case LimitContext::TESTPASS:
             default:
-                $query = "SELECT plays, seconds, pass, active_id FROM {$this::TABLE} 
+                $query = "SELECT plays, seconds, pass, active_id FROM " . self::TABLE . "
                 WHERE parent_id = %s AND page_id = %s AND file_id =  %s AND user_id = %s";
 
-                $res = $this->db->queryF($query,
-                    ['integer', 'integer', 'text', 'integer'],
-                    [$this->parent_id, $this->page_id, $this->file_id, $user_id]);
+                $res = $this->db->queryF(
+                    $query,
+                    [ilDBConstants::T_INTEGER, ilDBConstants::T_INTEGER, ilDBConstants::T_TEXT, ilDBConstants::T_INTEGER],
+                    [$this->parent_id, $this->page_id, $this->file_id, $user_id]
+                );
 
                 $row = (array) $this->db->fetchAssoc($res);
                 $plays = $row['plays'] ?? 0;
@@ -61,7 +64,11 @@ class UsageRepo
                 break;
         }
 
-        return $this->changeByContext(new Usage($user_id, $this->parent_id, $this->page_id, $this->file_id,
+        return $this->changeByContext(new Usage(
+            $user_id,
+            $this->parent_id,
+            $this->page_id,
+            $this->file_id,
             (int) $plays,
             isset($seconds) ? (float) $seconds : null,
             isset($pass) ? (int) $pass : null,
@@ -76,10 +83,12 @@ class UsageRepo
         switch ($this->limit_context->value()) {
 
             case LimitContext::SESSION:
-                ilSession::set('limply_plays-'. $usage->getParentId().'-'.$usage->getPageId() .'-'.$usage->getFileId() .'-'. $usage->getUserId(),
+                ilSession::set(
+                    'limply_plays-' . $usage->getParentId() . '-' . $usage->getPageId() . '-' . $usage->getFileId() . '-' . $usage->getUserId(),
                     $usage->getPlays()
                 );
-                ilSession::set('limply_seconds-'. $usage->getParentId().'-'.$usage->getPageId() .'-'.$usage->getFileId() .'-'. $usage->getUserId(),
+                ilSession::set(
+                    'limply_seconds-' . $usage->getParentId() . '-' . $usage->getPageId() . '-' . $usage->getFileId() . '-' . $usage->getUserId(),
                     $usage->getPlays()
                 );
                 break;
@@ -88,20 +97,21 @@ class UsageRepo
             case LimitContext::TESTPASS:
             default:
 
-            $this->db->replace(self::TABLE,
-                array(
-                    'parent_id' => array('integer', $usage->getParentId()),
-                    'page_id' => array('integer', $usage->getPageId()),
-                    'file_id' => array('integer', $usage->getFileId()),
-                    'user_id' => array('integer', $usage->getUserId()),
-                ),
-                array(
-                    'plays' => array('integer', $usage->getPlays()),
-                    'seconds' => array('float', $usage->getSeconds()),
-                    'pass' => array('integer', $usage->getPass()),
-                    'active_id' => array('integer', $usage->getActiveId()),
-                )
-            );
+                $this->db->replace(
+                    self::TABLE,
+                    array(
+                        'parent_id' => array(ilDBConstants::T_INTEGER, $usage->getParentId()),
+                        'page_id' => array(ilDBConstants::T_INTEGER, $usage->getPageId()),
+                        'file_id' => array(ilDBConstants::T_TEXT, $usage->getFileId()),
+                        'user_id' => array(ilDBConstants::T_INTEGER, $usage->getUserId()),
+                    ),
+                    array(
+                        'plays' => array(ilDBConstants::T_INTEGER, $usage->getPlays()),
+                        'seconds' => array(ilDBConstants::T_FLOAT, $usage->getSeconds()),
+                        'pass' => array(ilDBConstants::T_INTEGER, $usage->getPass()),
+                        'active_id' => array(ilDBConstants::T_INTEGER, $usage->getActiveId()),
+                    )
+                );
         }
     }
 
@@ -116,9 +126,16 @@ class UsageRepo
             $active_id = ilObjTest::_getActiveIdOfUser($usage->getUserId(), $test_id);
             $pass = ilObjTest::_getPass($active_id);
 
-            if ( $usage->getPass() !== $pass || $usage->getActiveId() !== $active_id) {
-                return new Usage($usage->getUserId(), $usage->getParentId(), $usage->getPageId(), $usage->getFileId(),
-                    0, null, $pass, isset($active_id) ? (int) $active_id : null
+            if ($usage->getPass() !== $pass || $usage->getActiveId() !== $active_id) {
+                return new Usage(
+                    $usage->getUserId(),
+                    $usage->getParentId(),
+                    $usage->getPageId(),
+                    $usage->getFileId(),
+                    0,
+                    null,
+                    $pass,
+                    isset($active_id) ? (int) $active_id : null
                 );
             }
         }

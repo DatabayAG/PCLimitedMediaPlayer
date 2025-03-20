@@ -14,6 +14,7 @@ use ILIAS\UI\Component\Input\Container\Form\Standard as Form;
 use ILIAS\Refinery\Factory as Refinery;
 use ILIAS\Plugin\LimitedMediaPlayer\Medium;
 use Psr\Http\Message\RequestInterface;
+use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
@@ -21,18 +22,15 @@ use Psr\Http\Message\RequestInterface;
  */
 class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 {
-    public const VIEW_EDIT = 'edit';
-    public const VIEW_OFFLINE = 'offline';
-    public const VIEW_PRINT = 'print';
     public const VIEW_PRESENTATION = 'presentation';
     public const VIEW_PREVIEW = 'preview';
+    public const VIEW_META = 'meta';
 
     public const CMD_CREATE_PLUG = 'create_plug'; // needed for the page editor this way
     public const CMD_CREATE = 'create';
     public const CMD_EDIT = 'edit';
     public const CMD_UPDATE = 'update';
     public const CMD_CANCEL = 'cancel';
-
 
     /** @var ilPCLimitedMediaPlayerPlugin $plugin */
     protected ilPageComponentPlugin $plugin;
@@ -51,7 +49,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     private ilCtrlAwareStorageUploadHandler $upload_handler;
     private RequestInterface $request;
 
-
+    private RequestVariables $get;
     private string $error_message;
 
     public function __construct()
@@ -71,6 +69,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $this->request = $DIC->http()->request();
 
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
+        $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $this->refinery);
     }
 
     public function executeCommand(): void
@@ -100,7 +99,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     }
 
     /**
-     * Show the creation form
+     * Show the form to create a new element (directly called)
      */
     public function insert(): void
     {
@@ -138,7 +137,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     /**
      * Update the edited element
      */
-    public function update(): void
+    private function update(): void
     {
         $form = $this->initForm(false)->withRequest($this->request);
         if (!empty($data = $form->getData())) {
@@ -155,9 +154,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     /**
      * Save the posted properties
      */
-    protected function saveForm(array $data, bool $create): bool
+    private function saveForm(array $data, bool $create): bool
     {
-        $medium = Medium::fromProperties($this->getPageId(), $this->getProperties())
+        $medium = Medium::fromProperties($this->plugin->getPageId(), $this->getProperties())
             ->setMediumTitle($data['general']['title'] ?? 'Medium')
             ->setFileId($data['general']['file_id'][0] ?? '')
             ->setLimitPlays($data['general']['limit_plays'] ?? null)
@@ -186,13 +185,12 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         return true;
     }
 
-
     /**
      * Init editing form
      */
-    protected function initForm(bool $create = false): Form
+    private function initForm(bool $create = false): Form
     {
-        $medium = Medium::fromProperties($this->getPageId(), $this->getProperties());
+        $medium = Medium::fromProperties($this->plugin->getPageId(), $this->getProperties());
 
         $factory = $this->ui_factory->input()->field();
         $sections = [];
@@ -202,9 +200,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             ->withRequired(true)
             ->withValue($medium->getTitle());
 
-        //        $fields['file_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_file'))
-        //            ->withValue(empty($medium->getFileId()) ? [] : [$medium->getFileId()])
-        //            ->withRequired(true);
+        $fields['file_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_file'))
+            ->withValue(empty($medium->getFileId()) ? [] : [$medium->getFileId()])
+            ->withRequired(true);
 
         $fields['limit_plays'] = $factory->numeric($this->plugin->txt('limit_plays'))
             ->withAdditionalTransformation($this->refinery->int()->isGreaterThanOrEqual(0))
@@ -218,20 +216,18 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         $sections['general'] = $factory->section(
             $fields,
-            $create ? $this->plugin->txt('cmd_insert') : $this->lng->txt('edit_limited_media_player')
+            $create ? $this->plugin->txt('cmd_insert') : $this->plugin->txt('edit_limited_media_player')
         );
 
         $fields = [];
 
-        //        $fields['preview_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_startpic'))
-        //            ->withValue(empty($medium->getPreviewId()) ? [] : [$medium->getPreviewId()]);
+        $fields['preview_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_startpic'))
+            ->withValue(empty($medium->getPreviewId()) ? [] : [$medium->getPreviewId()]);
 
         $fields['width'] = $factory->numeric($this->plugin->txt('medium_width'))
-            //->withAdditionalTransformation($this->refinery->kindlyTo()->int())
             ->withValue($medium->getWidth());
 
         $fields['height'] = $factory->numeric($this->plugin->txt('medium_height'))
-            //->withAdditionalTransformation($this->refinery->kindlyTo()->int())
             ->withValue($medium->getHeight());
 
         $fields['play_in_modal'] = $factory->radio($this->plugin->txt('play_in_modal'))
@@ -246,7 +242,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             ->withAdditionalTransformation($this->refinery->kindlyTo()->bool())
             ->withValue($medium->getPlayWithPause());
 
-
         $sections['details'] = $factory->section($fields, $this->plugin->txt('settings_details'));
 
         return $this->ui_factory->input()->container()->form()->standard($this->ctrl->getFormAction(
@@ -255,7 +250,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         ), $sections)
             ->withSubmitCaption($this->lng->txt($create ? 'create' : 'save'));
     }
-
 
     public function cancel(): void
     {
@@ -268,25 +262,18 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $this->tabs->activateTab($a_active);
     }
 
-
-    /**
-     * Get HTML for element
-     *
-     * @param string    $a_mode page mode (edit, presentation, print, preview, offline)
-     * @return string   html code
-     */
     public function getElementHTML(string $a_mode, array $a_properties, string $plugin_version): string
     {
         $info = [];
         $params = [];
         $tpl = $this->plugin->getTemplate("tpl.page_block.html");
 
-        $medium = Medium::fromProperties($this->getPageId(), $a_properties);
+        $medium = Medium::fromProperties($this->plugin->getPageId(), $a_properties);
 
-        $limit = new Limit($this->getParentId(), $this->getPageId(), $medium->getFileId(), $this->user->getId(), $medium->getLimitPlays(), true);
+        // default limit
+        $limit = new Limit(0, $this->plugin->getParentId(), $this->plugin->getPageId(), $medium->getFileId(), $this->user->getId(), $medium->getLimitPlays(), true);
 
-        $this->setMode($this->getViewMode());
-        switch ($this->getMode()) {
+        switch ($this->getViewMode()) {
             case self::VIEW_PRESENTATION:
             case self::VIEW_PREVIEW:
 
@@ -297,19 +284,19 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 iljQueryUtil::initjQueryUI();
 
                 // get usage and playing status
-                // adjust the context and limit in preview
+                // adjust the context and limit
                 if ($this->getViewMode() == self::VIEW_PREVIEW) {
                     $limit = $limit->setPlays(null);
                     $limit_context = LimitContext::from(LimitContext::SESSION);
                 } else {
-                    $limit = $this->plugin->factory()->LimitRepo($this->getParentId())->effective($limit);
+                    $limit = $this->plugin->factory()->LimitRepo($this->plugin->getParentId())->effective($limit);
                     $limit_context = $medium->getLimitContext();
                 }
 
                 // get the usage and status for the context
-                $usage_repo = $this->plugin->factory()->usageRepo($this->getParentId(), $this->getPageId(), $medium->getFileId(), $limit_context);
+                $usage_repo = $this->plugin->factory()->usageRepo($this->plugin->getParentId(), $this->plugin->getPageId(), $medium->getFileId(), $limit_context);
                 $usage = $usage_repo->get($this->user->getId());
-                $usage->setPageView((bool) $a_properties['play_pause']);
+                $usage->setPageView($medium->getPlayWithPause());
 
                 $status = $usage->getStatus($limit->getPlays(), $medium->getPlayWithPause());
 
@@ -322,7 +309,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
                     $modal = ilModalGUI::getInstance();
                     $modal->setId('limplyModal' . $medium->getFileId());
-                    $modal->setHeading($a_properties['medium_title']);
+                    $modal->setHeading($medium->getTitle());
                     $modal->setBody($html);
                     $modal->setType(ilModalGUI::TYPE_LARGE);
                     $tpl->setVariable('PLAYER', $modal->getHTML());
@@ -345,9 +332,6 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 $this->tpl->addOnLoadCode('il.PCLimitedMediaPlayerPage.initPage(' . json_encode($texts) . ');');
                 break;
 
-            case self::VIEW_EDIT:
-            case self::VIEW_PRINT:
-            case self::VIEW_OFFLINE:
             default:
                 //
                 // Show only a representation with metadata
@@ -383,8 +367,8 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         $url = $this->ctrl->getLinkTargetByClass([ilUIPluginRouterGUI::class, ilPCLimitedMediaPlayerGUI::class]);
         $params = [
-            'parent_id' => $this->getParentId(),
-            'page_id' => $this->getPageId(),
+            'parent_id' => $this->plugin->getParentId(),
+            'page_id' => $this->plugin->getPageId(),
             'file_id' => $medium->getFileId(),
             'preview_id' => $medium->getPreviewId(),
             'height' => $medium->getHeight(),
@@ -394,6 +378,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             'limit_plays' => (int) $limit->getPlays(),
         ];
         foreach ($params as $name => $value) {
+            // todo: use UrlBuilder
             $url = ilUtil::appendUrlParameterString($url, $name . '=' . $value, true);
         }
         $tpl->setVariable('PLAYER_URL', $url);
@@ -487,77 +472,29 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         return $tpl->get();
     }
 
-
     /**
-     * Get the mode for viewing the element
+     * Get how the page content should be presented
      */
     protected function getViewMode(): string
     {
-        switch ($this->ctrl->getCmdClass()) {
-            case strtolower(ilAssQuestionPageGUI::class):
-            case strtolower(ilTestExpressPageObjectGUI::class):
-                return self::VIEW_EDIT;
-
+        switch (strtolower($this->get->string('cmdClass'))) {
             case strtolower(ilAssQuestionPreviewGUI::class):
                 return self::VIEW_PREVIEW;
 
             case strtolower(ilObjTestGUI::class):
-                switch ($this->ctrl->getCmd()) {
-                    case 'preview':
-                        return self::VIEW_PREVIEW;
-
-                    case 'print':
-                    default:
-                        return self::VIEW_PRINT;
+                if ($this->ctrl->getCmd() == 'preview') {
+                    return self::VIEW_PREVIEW;
+                } else {
+                    return self::VIEW_PRESENTATION;
                 }
-                return self::VIEW_PRESENTATION;
 
+                // no break
             case strtolower(ilTestPlayerFixedQuestionSetGUI::class):
             case strtolower(ilTestPlayerRandomQuestionSetGUI::class):
                 return self::VIEW_PRESENTATION;
 
-            case strtolower(ilObjQuestionPoolGUI::class):
-            case strtolower(ilTestScoringGUI::class):
-            case strtolower(ilTestScoringByQuestionsGUI::class):
-            case strtolower(ilTestEvaluationGUI::class):
-            case strtolower(ilTestSubmissionReviewGUI::class):
             default:
-                return self::VIEW_PRINT;
+                return self::VIEW_META;
         }
-    }
-
-    /**
-     * Get the ID of the current page
-     * Currently equal to question id, only available in editor, preview and print view
-     */
-    protected function getPageId(): int
-    {
-        return $this->getPlugin()->getPageId();
-
-        //        if ($this->getViewMode() == self::VIEW_PRESENTATION) {
-        //
-        //            $ref_id = $this->get->integer('ref_id', 0);
-        //            $sequence = $this->get->integer('sequence', 0);
-        //
-        //            $sequence_obj = $this->plugin->factory()->testSequence($ref_id);
-        //
-        //            if (empty($sequence)) {
-        //                $sequence = $sequence_obj->getFirstSequence();
-        //            }
-        //            return $sequence_obj->getQuestionForSequence($sequence);
-        //
-        //        } else {
-        //            return $this->get->integer('q_id', 0);
-        //        }
-    }
-
-    /**
-     * Get the id of the parent object
-     * Currently the object id of the pool or test
-     */
-    protected function getParentId(): int
-    {
-        return $this->getPlugin()->getParentId();
-        //return ilObject::_lookupObjectId($this->get->integer('ref_id', 0));
     }
 }

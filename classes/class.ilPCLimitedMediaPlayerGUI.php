@@ -14,7 +14,7 @@ use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
 /**
  * GUI class to show the player and handle updates (called from iframe)
  *
- * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerGUI: ilObjPluginDispatchGUI
+ * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerGUI: ilUIPluginRouterGUI
  */
 class ilPCLimitedMediaPlayerGUI
 {

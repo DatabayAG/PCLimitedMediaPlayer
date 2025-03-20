@@ -11,21 +11,28 @@ namespace ILIAS\Plugin\LimitedMediaPlayer;
  */
 class Limit
 {
+    private int $id;
     private int $parent_id;
     private ?int $page_id;
-    private ?int $file_id;
+    private ?string $file_id;
     private ?int $user_id;
     private ?int $plays;
     private bool $default = false;
 
-    public function __construct(int $parent_id, ?int $page_id, ?string $file_id, ?int $user_id, ?int $plays, bool $default = false)
+    public function __construct(int $id, int $parent_id, ?int $page_id, ?string $file_id, ?int $user_id, ?int $plays, bool $default = false)
     {
+        $this->id = $id;
         $this->parent_id = $parent_id;
         $this->page_id = $page_id;
         $this->file_id = $file_id;
         $this->user_id = $user_id;
         $this->plays = $plays;
         $this->default = $default;
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
     }
 
     public function getParentId(): int

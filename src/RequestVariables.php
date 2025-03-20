@@ -26,7 +26,11 @@ class RequestVariables
     public function bool(string $key, ?string $default = null): ?bool
     {
         if ($this->wrapper->has($key)) {
-            return $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->bool());
+            $value = $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->string());
+            if ($value === '') {
+                return $default;
+            }
+            return (bool) $value;
         }
         return $default;
     }
@@ -34,7 +38,11 @@ class RequestVariables
     public function integer(string $key, ?int $default = null): ?int
     {
         if ($this->wrapper->has($key)) {
-            return $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->int());
+            $value = $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->string());
+            if ($value === '') {
+                return $default;
+            }
+            return (int) $value;
         }
         return $default;
     }
@@ -42,7 +50,11 @@ class RequestVariables
     public function float(string $key, ?string $default = null): ?float
     {
         if ($this->wrapper->has($key)) {
-            return $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->float());
+            $value =  $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->string());
+            if ($value === '') {
+                return $default;
+            }
+            return (float) $value;
         }
         return $default;
     }
