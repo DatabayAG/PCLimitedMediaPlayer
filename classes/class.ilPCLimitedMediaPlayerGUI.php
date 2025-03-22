@@ -40,7 +40,7 @@ class ilPCLimitedMediaPlayerGUI
     private string $preview_id;
     private int $height;
     private int $width;
-    private string $limit_context;
+    private LimitContext $limit_context;
     private int $limit_plays;
     private bool $play_with_pause;
 
@@ -69,13 +69,13 @@ class ilPCLimitedMediaPlayerGUI
         $this->preview_id = (string) $this->get->string('preview_id');
         $this->height = (int) $this->get->integer('height');
         $this->width = (int) $this->get->integer('width');
-        $this->limit_context = (string) $this->get->string('limit_context');
+        $this->limit_context = LimitContext::tryFrom((string) $this->get->string('limit_context')) ?? LimitContext::from(LimitContext::TESTPASS);
         $this->limit_plays = (int) $this->get->integer('limit_plays');
         $this->play_with_pause = (bool) $this->get->bool('play_with_pause');
 
-        $this->usage_repo = $this->plugin->factory()->usageRepo($this->parent_id, $this->page_id, $this->file_id, LimitContext::from($this->limit_context));
+        $this->usage_repo = $this->plugin->factory()->usageRepo();
         $this->preferences_repo = $this->plugin->factory()->preferencesRepo();
-        $this->usage = $this->usage_repo->get($DIC->user()->getId());
+        $this->usage = $this->usage_repo->get($DIC->user()->getId(), $this->parent_id, $this->page_id, $this->file_id, $this->limit_context);
         $this->volume = $this->preferences_repo->getVolume();
     }
 
@@ -133,7 +133,7 @@ class ilPCLimitedMediaPlayerGUI
         }
 
         $this->ctrl->setParameter($this, 'limit_plays', $this->limit_plays);
-        $this->ctrl->setParameter($this, 'limit_context', $this->limit_context);
+        $this->ctrl->setParameter($this, 'limit_context', $this->limit_context->value());
         $this->ctrl->setParameter($this, 'parent_id', $this->parent_id);
         $this->ctrl->setParameter($this, 'page_id', $this->page_id);
         $this->ctrl->setParameter($this, 'parent_id', $this->parent_id);
@@ -194,7 +194,7 @@ class ilPCLimitedMediaPlayerGUI
         $seconds = $this->post->float('current_seconds');
 
         $this->usage->setProgress($plays ?? 0, $seconds ?? null);
-        $this->usage_repo->save($this->usage);
+        $this->usage_repo->save($this->usage, $this->limit_context);
 
         $this->http->saveResponse($this->http->response()->withBody(Streams::ofString(json_encode([
                 'status' => (string) $this->usage->getStatus($this->limit_plays, false),

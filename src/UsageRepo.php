@@ -14,32 +14,20 @@ class UsageRepo
     private const TABLE = 'limply_uses';
 
     private ilDBInterface $db;
-    private int $parent_id;
-    private int $page_id;
-    private string $file_id;
-    private LimitContext $limit_context;
 
     public function __construct(
-        ilDBInterface $db,
-        int $parent_id,
-        int $page_id,
-        string $file_id,
-        LimitContext $limit_context
+        ilDBInterface $db
     ) {
         $this->db = $db;
-        $this->parent_id = $parent_id;
-        $this->page_id = $page_id;
-        $this->file_id = $file_id;
-        $this->limit_context = $limit_context;
     }
 
-    public function get(int $user_id): Usage
+    public function get(int $user_id, int $parent_id, int $page_id, string $file_id, LimitContext $context): Usage
     {
-        switch ($this->limit_context->value()) {
+        switch ($context->value()) {
 
             case LimitContext::SESSION:
-                $plays = ilSession::get('limply_plays-' . $this->parent_id . '-' . $this->page_id . '-' . $this->file_id . '-' . $user_id) ?? 0;
-                $seconds = ilSession::get('limply_seconds-' . $this->parent_id . '-' . $this->page_id . '-' . $this->file_id . '-' . $user_id) ?? null;
+                $plays = ilSession::get('limply_plays-' . $parent_id . '-' . $page_id . '-' . $file_id . '-' . $user_id) ?? 0;
+                $seconds = ilSession::get('limply_seconds-' . $parent_id . '-' . $page_id . '-' . $file_id . '-' . $user_id) ?? null;
                 $pass = null;
                 $active_id = null;
                 break;
@@ -53,7 +41,7 @@ class UsageRepo
                 $res = $this->db->queryF(
                     $query,
                     [ilDBConstants::T_INTEGER, ilDBConstants::T_INTEGER, ilDBConstants::T_TEXT, ilDBConstants::T_INTEGER],
-                    [$this->parent_id, $this->page_id, $this->file_id, $user_id]
+                    [$parent_id, $page_id, $file_id, $user_id]
                 );
 
                 $row = (array) $this->db->fetchAssoc($res);
@@ -66,21 +54,21 @@ class UsageRepo
 
         return $this->changeByContext(new Usage(
             $user_id,
-            $this->parent_id,
-            $this->page_id,
-            $this->file_id,
+            $parent_id,
+            $page_id,
+            $file_id,
             (int) $plays,
             isset($seconds) ? (float) $seconds : null,
             isset($pass) ? (int) $pass : null,
             isset($active_id) ? (int) $active_id : null
-        ));
+        ), $context);
     }
 
-    public function save(Usage $usage): void
+    public function save(Usage $usage, LimitContext $context): void
     {
-        $usage = $this->changeByContext($usage);
+        $usage = $this->changeByContext($usage, $context);
 
-        switch ($this->limit_context->value()) {
+        switch ($context->value()) {
 
             case LimitContext::SESSION:
                 ilSession::set(
@@ -119,9 +107,9 @@ class UsageRepo
      * Change the usage if the status of the context has changed
      * Plays and seconds should be reset if a new test pass has started
      */
-    private function changeByContext(Usage $usage): Usage
+    private function changeByContext(Usage $usage, LimitContext $context): Usage
     {
-        if ($this->limit_context->value() == LimitContext::TESTPASS) {
+        if ($context->value() == LimitContext::TESTPASS) {
             $test_id = ilObjTest::_getTestIDFromObjectID($usage->getParentId());
             $active_id = ilObjTest::_getActiveIdOfUser($usage->getUserId(), $test_id);
             $pass = ilObjTest::_getPass($active_id);

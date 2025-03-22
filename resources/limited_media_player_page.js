@@ -20,25 +20,14 @@ il.PCLimitedMediaPlayerPage = new function() {
      */
 	var initialized = false;
 
-
-    /**
-	 * Texts to be dynamically rendered
-	 * @type object
-	 * @private
-	 */
-	var texts = {};
-
-
 	/**
 	 * Initialize the page
 	 * called from ilPCLimitedMediaPlayerPluginGUI::getElementHTML(),
-	 * @param a_texts	texts to be dynamically rendered
 	 */
-	this.initPage = function(a_texts) {
+	this.initPage = function() {
 
 	    if (!initialized) {
             initialized = true;
-            texts = a_texts;
 
             $(window).on("message onmessage", self.getUpdate);
 
@@ -161,5 +150,4 @@ il.PCLimitedMediaPlayerPage = new function() {
                 break;
         }
     }
-
 };

@@ -6,7 +6,7 @@ use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
 use ILIAS\Plugin\LimitedMediaPlayer\Status;
 use ILIAS\Plugin\LimitedMediaPlayer\Usage;
 use ILIAS\Plugin\LimitedMediaPlayer\Limit;
-use ILIAS\Plugin\LimitedMediaPlayer\Stakeholder;
+use ILIAS\Plugin\LimitedMediaPlayer\StakeholderForUpload;
 use ilGlobalTemplateInterface as Gti;
 use ILIAS\UI\Factory as UiFactory;
 use ILIAS\UI\Renderer as UiRenderer;
@@ -15,6 +15,9 @@ use ILIAS\Refinery\Factory as Refinery;
 use ILIAS\Plugin\LimitedMediaPlayer\Medium;
 use Psr\Http\Message\RequestInterface;
 use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
+use ILIAS\Plugin\LimitedMediaPlayer\MediumRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\LimitRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
@@ -49,6 +52,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     private ilCtrlAwareStorageUploadHandler $upload_handler;
     private RequestInterface $request;
 
+    private MediumRepo $medium_repo;
+    private LimitRepo $limit_repo;
+    private UsageRepo $usage_repo;
     private RequestVariables $get;
     private string $error_message;
 
@@ -65,10 +71,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $this->ui_factory = $DIC->ui()->factory();
         $this->ui_renderer = $DIC->ui()->renderer();
         $this->refinery = $DIC->refinery();
-        $this->upload_handler = new ilPCLimitedMediaPlayerUploadHandlerGUI(new Stakeholder());
+        $this->upload_handler = new ilPCLimitedMediaPlayerUploadHandlerGUI(new StakeholderForUpload());
         $this->request = $DIC->http()->request();
 
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
+        $this->medium_repo = $this->plugin->factory()->mediumRepo();
+        $this->limit_repo = $this->plugin->factory()->limitRepo();
+        $this->usage_repo = $this->plugin->factory()->usageRepo();
+
         $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $this->refinery);
     }
 
@@ -177,6 +187,16 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $success = $this->updateElement($medium->toProperties());
         }
 
+        if ($success) {
+            if (!empty($medium->getFileId())) {
+                $this->medium_repo->setFileUsed($medium->getFileId());
+            }
+            if (!empty($medium->getPreviewId())) {
+                $this->medium_repo->setFileUsed($medium->getPreviewId());
+            }
+        }
+        $this->medium_repo->cleanupUnusedFiles();
+
         if (!$success) {
             $this->error_message = $this->plugin->txt('err_save_properties');
             return false;
@@ -268,36 +288,26 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $params = [];
         $tpl = $this->plugin->getTemplate("tpl.page_block.html");
 
+        // get the medium and default playing limit
         $medium = Medium::fromProperties($this->plugin->getPageId(), $a_properties);
-
-        // default limit
         $limit = new Limit(0, $this->plugin->getParentId(), $this->plugin->getPageId(), $medium->getFileId(), $this->user->getId(), $medium->getLimitPlays(), true);
 
         switch ($this->getViewMode()) {
             case self::VIEW_PRESENTATION:
             case self::VIEW_PREVIEW:
 
-                //
-                // Show the embedded player
-                //
-                iljQueryUtil::initjQuery();
-                iljQueryUtil::initjQueryUI();
-
-                // get usage and playing status
-                // adjust the context and limit
+                // get the effective playing limit and context
                 if ($this->getViewMode() == self::VIEW_PREVIEW) {
                     $limit = $limit->setPlays(null);
                     $limit_context = LimitContext::from(LimitContext::SESSION);
                 } else {
-                    $limit = $this->plugin->factory()->LimitRepo($this->plugin->getParentId())->effective($limit);
+                    $limit = $this->limit_repo->effective($limit, $this->plugin->getParentId());
                     $limit_context = $medium->getLimitContext();
                 }
 
                 // get the usage and status for the context
-                $usage_repo = $this->plugin->factory()->usageRepo($this->plugin->getParentId(), $this->plugin->getPageId(), $medium->getFileId(), $limit_context);
-                $usage = $usage_repo->get($this->user->getId());
+                $usage = $this->usage_repo->get($this->user->getId(), $this->plugin->getParentId(), $this->plugin->getPageId(), $medium->getFileId(), $limit_context);
                 $usage->setPageView($medium->getPlayWithPause());
-
                 $status = $usage->getStatus($limit->getPlays(), $medium->getPlayWithPause());
 
                 if ($medium->getPlayInModal()) {
@@ -320,39 +330,22 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                     $tpl->setVariable('PLAYER', $this->getElementPlayerHTML($medium, $limit, $limit_context));
 
                     $controls = ($medium->getPlayWithPause() ? ['play', 'pause', 'continue', 'volume'] : ['play', 'volume']);
-
                 }
                 $tpl->setVariable('CONTROLS', $this->getElementControlsHTML($medium, $usage, $status, $controls));
+                $tpl->setVariable('INFO', $this->getElementInfoHTML($medium, $limit, $usage));
 
                 // prepare javascript
+                iljQueryUtil::initjQuery();
+                iljQueryUtil::initjQueryUI();
                 $tpl->setVariable('MEDIUM_ID', $medium->getFileId());
-                $texts = array(
-                    'test' => 'Hallo'
-                );
-                $this->tpl->addOnLoadCode('il.PCLimitedMediaPlayerPage.initPage(' . json_encode($texts) . ');');
+                $this->tpl->addOnLoadCode('il.PCLimitedMediaPlayerPage.initPage();');
                 break;
 
+            case self::VIEW_META:
             default:
-                //
-                // Show only a representation with metadata
-                //
-                $info = array(
-                    $this->plugin->txt('medium_file') => $medium->getFileId(),
-                    $this->plugin->txt('limit_plays') => $medium->getLimitPlays(),
-                    $this->plugin->txt('limit_context') => $this->plugin->txt('limit_context_' . $medium->getLimitContext()->value()),
-                    $this->plugin->txt('play_mode') => $this->plugin->txt($medium->getPlayInModal() ? 'play_in_modal' : 'play_on_page'),
-                    $this->plugin->txt('play_pause') => $medium->getPlayWithPause() ?
-                        $this->plugin->txt('play_with_pause') : $this->plugin->txt('play_without_pause')
-                );
-
-                $usage = null;
-                break;
+                $tpl->setVariable('INFO', $this->getElementInfoHTML($medium, $limit));
         }
 
-        // show info block
-        $tpl->setVariable('INFO', $this->getElementInfoHTML($medium, $limit, $usage, $info));
-
-        // always show the title
         $tpl->setCurrentBlock('title');
         $tpl->setVariable("TITLE", $medium->getTitle());
         $tpl->parseCurrentBlock();
@@ -363,24 +356,22 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_player.html");
 
-        // media iframe
-
-        $url = $this->ctrl->getLinkTargetByClass([ilUIPluginRouterGUI::class, ilPCLimitedMediaPlayerGUI::class]);
         $params = [
             'parent_id' => $this->plugin->getParentId(),
             'page_id' => $this->plugin->getPageId(),
             'file_id' => $medium->getFileId(),
             'preview_id' => $medium->getPreviewId(),
-            'height' => $medium->getHeight(),
-            'width' => $medium->getWidth(),
+            'width' => max($medium->getWidth(), 200),
+            'height' => max($medium->getHeight(), 50),
             'play_with_pause' => $medium->getPlayWithPause(),
             'limit_context' => $limit_context->value(),
             'limit_plays' => (int) $limit->getPlays(),
         ];
         foreach ($params as $name => $value) {
-            // todo: use UrlBuilder
-            $url = ilUtil::appendUrlParameterString($url, $name . '=' . $value, true);
+            $this->ctrl->setParameterByClass(ilPCLimitedMediaPlayerGUI::class, $name, $value);
         }
+        $url = $this->ctrl->getLinkTargetByClass([ilUIPluginRouterGUI::class, ilPCLimitedMediaPlayerGUI::class]);
+
         $tpl->setVariable('PLAYER_URL', $url);
         $tpl->setVariable('PLAYER_WIDTH', max($medium->getWidth(), 200));
         $tpl->setVariable('PLAYER_HEIGHT', max($medium->getHeight(), 50));
@@ -433,7 +424,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      * get the HTML code of the element information
      * @param string[] $info (text => value)
      */
-    protected function getElementInfoHTML(Medium $medium, Limit $limit, ?Usage $usage = null, $info = []): string
+    protected function getElementInfoHTML(Medium $medium, Limit $limit, ?Usage $usage = null): string
     {
         $tpl = $this->getPlugin()->getTemplate("tpl.page_info.html");
 
@@ -459,7 +450,17 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $tpl->setVariable("CURRENT_SECONDS_TEXT", $this->plugin->txt("runtime_seconds"));
         }
 
-        if (!empty($info)) {
+        if ($this->getViewMode() == self::VIEW_META) {
+
+            $info = array(
+                $this->plugin->txt('medium_file') => $this->medium_repo->getFileName($medium->getFileId()) ?? $medium->getFileId(),
+                $this->plugin->txt('limit_plays') => $medium->getLimitPlays(),
+                $this->plugin->txt('limit_context') => $this->plugin->txt('limit_context_' . $medium->getLimitContext()->value()),
+                $this->plugin->txt('play_mode') => $this->plugin->txt($medium->getPlayInModal() ? 'play_in_modal' : 'play_on_page'),
+                $this->plugin->txt('play_pause') => $medium->getPlayWithPause() ?
+                    $this->plugin->txt('play_with_pause') : $this->plugin->txt('play_without_pause')
+            );
+
             // show the static information
             foreach ($info as $text => $value) {
                 $tpl->setCurrentBlock('info');

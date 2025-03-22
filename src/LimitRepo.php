@@ -12,23 +12,20 @@ class LimitRepo
     private const TABLE = 'limply_limit';
 
     private ilDBInterface $db;
-    private int $parent_id;
 
     public function __construct(
-        ilDBInterface $db,
-        int $parent_id
+        ilDBInterface $db
     ) {
         $this->db = $db;
-        $this->parent_id = $parent_id;
     }
 
     /**
      * Get all limits defined for a parent object
      * @return  Limit[]
      */
-    public function all(): array
+    public function all(int $parent_id): array
     {
-        $result = $this->db->queryF("SELECT * FROM " . self::TABLE . " WHERE parent_id = %s", ['integer'], [$this->parent_id]);
+        $result = $this->db->queryF("SELECT * FROM " . self::TABLE . " WHERE parent_id = %s", ['integer'], [$parent_id]);
 
         $limits = [];
         while ($row = $this->db->fetchAssoc($result)) {
@@ -43,11 +40,11 @@ class LimitRepo
      * Use the best fitting adapted limit or the default
      * This respects the priorities among limit settings
      */
-    public function effective(Limit $default): Limit
+    public function effective(Limit $default, int $parent_id): Limit
     {
         $query = "SELECT * FROM " . self::TABLE . " WHERE "
             . implode(' AND ', [
-                $this->strict('parent_id', ilDBConstants::T_INTEGER, $this->parent_id),
+                $this->strict('parent_id', ilDBConstants::T_INTEGER, $parent_id),
                 $this->lax('page_id', ilDBConstants::T_INTEGER, $default->getPageId()),
                 $this->lax('file_id', ilDBConstants::T_TEXT, $default->getFileId()),
                 $this->lax('user_id', ilDBConstants::T_INTEGER, $default->getUserId())
@@ -86,7 +83,7 @@ class LimitRepo
                 'id' => $limit->getId(),
             ],
             [
-                'parent_id' => [ilDBConstants::T_INTEGER, $this->parent_id],
+                'parent_id' => [ilDBConstants::T_INTEGER, $limit->getParentId()],
                 'page_id' => [ilDBConstants::T_INTEGER, $limit->getPageId()],
                 'file_id' => [ilDBConstants::T_TEXT, $limit->getFileId()],
                 'user_id' => [ilDBConstants::T_INTEGER, $limit->getUserId()],

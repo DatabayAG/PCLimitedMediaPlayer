@@ -8,15 +8,73 @@ use DOMDocument;
 use DOMXPath;
 use DOMElement;
 use ilDBInterface;
+use ILIAS\ResourceStorage\Services as ResourceStorage;
+use ILIAS\ResourceStorage\Stakeholder\ResourceStakeholder;
+use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderRepository;
+use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderDBRepository;
 
 class MediumRepo
 {
     private ilDBInterface $db;
+    private ResourceStorage $storage;
+    private StakeholderRepository $stakeholder_repo;
+    private ResourceStakeholder $upload_stakeholder;
+    private ResourceStakeholder $use_stakeholder;
 
     public function __construct(
-        ilDBInterface $db
+        ilDBInterface $db,
+        ResourceStorage $storage,
+        StakeholderRepository $stakeholder_repo,
+        ResourceStakeholder $upload_stakeholder,
+        ResourceStakeholder $use_stakeholder
     ) {
         $this->db = $db;
+        $this->storage = $storage;
+        $this->stakeholder_repo = $stakeholder_repo;
+        $this->upload_stakeholder = $upload_stakeholder;
+        $this->use_stakeholder = $use_stakeholder;
+    }
+
+    /**
+     * Get the name of a resource file
+     */
+    public function getFileName($file_id): ?string
+    {
+        $id = $this->storage->manage()->find($file_id);
+        if ($id === null) {
+            return null;
+        }
+        return $this->storage->manage()->getCurrentRevision($id)->getTitle();
+    }
+
+    public function setFileUsed($file_id): void
+    {
+        $id = $this->storage->manage()->find($file_id);
+        if ($id !== null) {
+            $this->stakeholder_repo->deregister($id, $this->upload_stakeholder);
+            $this->stakeholder_repo->register($id, $this->use_stakeholder);
+        }
+    }
+
+    public function cleanupUnusedFiles()
+    {
+        $table = StakeholderDBRepository::TABLE_NAME;
+
+        $result = $this->db->queryF(
+            "SELECT rid FROM $table WHERE stakeholder_id = %s",
+            ['text'],
+            [$this->upload_stakeholder->getId()]
+        );
+
+        while ($row = $this->db->fetchAssoc($result)) {
+            $id = $this->storage->manage()->find($row['rid']);
+            if ($id !== null) {
+                $created = $this->storage->manage()->getCurrentRevision($id)->getInformation()->getCreationDate();
+                if ($created->getTimestamp() < time() - 3600) {
+                    $this->storage->manage()->remove($id, $this->upload_stakeholder);
+                }
+            }
+        }
     }
 
     /**

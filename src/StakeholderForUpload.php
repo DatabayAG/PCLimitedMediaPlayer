@@ -6,11 +6,11 @@ namespace ILIAS\Plugin\LimitedMediaPlayer;
 
 use ILIAS\ResourceStorage\Stakeholder\AbstractResourceStakeholder;
 
-class Stakeholder extends AbstractResourceStakeholder
+class StakeholderForUpload extends AbstractResourceStakeholder
 {
     public function getId(): string
     {
-        return 'PCLimitedMediaPlayer';
+        return 'PCLimitedMediaPlayerUpload';
     }
 
     public function getOwnerOfNewResources(): int

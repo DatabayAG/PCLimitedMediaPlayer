@@ -5,23 +5,18 @@ declare(strict_types=1);
 namespace ILIAS\Plugin\LimitedMediaPlayer;
 
 use ilDBInterface;
-use ilObjUser;
-use ilTestSequence;
-use ilTestSequenceFactory;
-use ilTestSessionFactory;
-use ilObjTest;
-use ILIAS\Refinery\Factory as Refinery;
-use ilComponentRepository;
-use ilLanguage;
-use ilTestSession;
+use ILIAS\ResourceStorage\Services as ResourceStorage;
+use ILIAS\UI\Component\Input\Field\UploadHandler;
+use ilPCLimitedMediaPlayerUploadHandlerGUI;
+use ILIAS\Plugin\LimitedMediaPlayer\StakeholderForUpload;
+use ILIAS\Plugin\LimitedMediaPlayer\StakeholderForUse;
+use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderDBRepository;
 
 class Factory
 {
     private ilDBInterface $db;
-    private ilObjUser $user;
-    private Refinery $refinery;
-    private ilLanguage $lng;
-    private ilComponentRepository $component_repository;
+    private ResourceStorage $resource_storage;
+
     private array $instances = [];
 
     public function __construct()
@@ -29,26 +24,28 @@ class Factory
         global $DIC;
 
         $this->db = $DIC->database();
-        $this->user = $DIC->user();
-        $this->lng = $DIC->language();
-        $this->refinery = $DIC->refinery();
-        $this->component_repository = $DIC['component.repository'];
+        $this->resource_storage = $DIC->resourceStorage();
     }
 
-    public function usageRepo(
-        int $parent_id,
-        int $page_id,
-        string $file_id,
-        LimitContext $limit_context
-    ): UsageRepo {
-        return $this->instances[UsageRepo::class][$parent_id][$page_id][$file_id][$limit_context->value()] ??
-            new UsageRepo($this->db, $parent_id, $page_id, $file_id, $limit_context);
-    }
-
-    public function LimitRepo(int $parent_id): LimitRepo
+    public function mediumRepo(): MediumRepo
     {
-        return $this->instances[LimitRepo::class][$parent_id] ??
-            new LimitRepo($this->db, $parent_id);
+        return $this->instances[MediumRepo::class] ?? new MediumRepo(
+            $this->db,
+            $this->resource_storage,
+            new StakeholderDBRepository($this->db),
+            new StakeholderForUpload(),
+            new StakeholderForUse()
+        );
+    }
+
+    public function usageRepo(): UsageRepo
+    {
+        return $this->instances[UsageRepo::class] ?? new UsageRepo($this->db);
+    }
+
+    public function limitRepo(): LimitRepo
+    {
+        return $this->instances[LimitRepo::class] ?? new LimitRepo($this->db);
     }
 
     public function preferencesRepo(): PreferencesRepo
@@ -56,16 +53,9 @@ class Factory
         return $this->instances[PreferencesRepo::class] = new PreferencesRepo();
     }
 
-    public function testSequence(int $ref_id): ilTestSequence
+    public function uploadHandler(): ilPCLimitedMediaPlayerUploadHandlerGUI
     {
-        $test_obj = new ilObjTest($ref_id);
-        $session_factory = new ilTestSessionFactory($test_obj);
-        $session_obj = $session_factory->getSessionByUserId($this->user->getId());
-
-        $sequence_factory = new ilTestSequenceFactory($this->db, $this->lng, $this->refinery, $this->component_repository, $test_obj);
-        $sequence_obj = $sequence_factory->getSequenceByTestSession($session_obj);
-        $sequence_obj->loadFromDb();
-        $sequence_obj->loadQuestions();
-        return $sequence_obj;
+        return $this->instances[ilPCLimitedMediaPlayerUploadHandlerGUI::class] ??
+            new ilPCLimitedMediaPlayerUploadHandlerGUI(new StakeholderForUpload());
     }
 }
