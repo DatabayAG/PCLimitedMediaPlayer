@@ -73,7 +73,7 @@ class Factory
 
     public function postVariables() : RequestVariables
     {
-        return $this->instances[PreferencesRepo::class]['get'] ??=
+        return $this->instances[PreferencesRepo::class]['post'] ??=
             new RequestVariables($this->http->wrapper()->post(), $this->refinery);
     }
 

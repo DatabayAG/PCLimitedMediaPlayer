@@ -24,12 +24,19 @@ class UsageRepo
     public function get(int $user_id, int $parent_id, int $page_id, string $file_id, LimitContext $context): Usage
     {
         switch ($context->value()) {
-
             case LimitContext::SESSION:
-                $plays = ilSession::get('limply_plays-' . $parent_id . '-' . $page_id . '-' . $file_id . '-' . $user_id) ?? 0;
-                $seconds = ilSession::get('limply_seconds-' . $parent_id . '-' . $page_id . '-' . $file_id . '-' . $user_id) ?? null;
-                $pass = null;
-                $active_id = null;
+                $plays = ilSession::get(
+                    'limply_plays-' . $parent_id . '-' . $page_id . '-' . $file_id . '-' . $user_id
+                ) ?? 0;
+                $seconds = ilSession::get(
+                    'limply_seconds-' . $parent_id . '-' . $page_id . '-' . $file_id . '-' . $user_id
+                ) ?? null;
+
+                return new Usage(
+                    $user_id, $parent_id, $page_id, $file_id,
+                    (int) $plays,
+                    isset($seconds) ? (float) $seconds : null,
+                );
                 break;
 
             case LimitContext::USER:
@@ -40,34 +47,50 @@ class UsageRepo
 
                 $res = $this->db->queryF(
                     $query,
-                    [ilDBConstants::T_INTEGER, ilDBConstants::T_INTEGER, ilDBConstants::T_TEXT, ilDBConstants::T_INTEGER],
+                    [
+                        ilDBConstants::T_INTEGER,
+                        ilDBConstants::T_INTEGER,
+                        ilDBConstants::T_TEXT,
+                        ilDBConstants::T_INTEGER
+                    ],
                     [$parent_id, $page_id, $file_id, $user_id]
                 );
 
                 $row = (array) $this->db->fetchAssoc($res);
-                $plays = $row['plays'] ?? 0;
-                $seconds = $row['seconds'] ?? null;
-                $pass = $row['pass'] ?? null;
-                $active_id = $row['active_id'] ?? null;
-                break;
-        }
+                $usage = new Usage(
+                    $user_id, $parent_id, $page_id, $file_id,
+                    (int) ($row['plays'] ?? 0),
+                    isset($row['seconds']) ? (float) $row['seconds'] : null,
+                    isset($row['pass']) ? (int) $row['pass'] : null,
+                    isset($row['active_id']) ? (int) $row['active_id'] : null
+                );
 
-        return $this->changeByContext(new Usage(
-            $user_id,
-            $parent_id,
-            $page_id,
-            $file_id,
-            (int) $plays,
-            isset($seconds) ? (float) $seconds : null,
-            isset($pass) ? (int) $pass : null,
-            isset($active_id) ? (int) $active_id : null
-        ), $context);
+                // adjust usage if test pass or active id has changed
+                if ($context->value() == LimitContext::TESTPASS) {
+                    $test_id = (int) ilObjTest::_getTestIDFromObjectID($parent_id ?? 0);
+                    $active_id = (int) ilObjTest::_getActiveIdOfUser($user_id, $test_id);
+                    $pass = ilObjTest::_getPass($active_id);
+
+                    if ($usage->getPass() !== $pass || $usage->getActiveId() !== $active_id) {
+                        $usage = new Usage(
+                            $usage->getUserId(),
+                            $usage->getParentId(),
+                            $usage->getPageId(),
+                            $usage->getFileId(),
+                            0,
+                            null,
+                            $pass,
+                            isset($active_id) ? (int) $active_id : null
+                        );
+                    }
+                    $this->save($usage, $context);
+                }
+                return $usage;
+        }
     }
 
     public function save(Usage $usage, LimitContext $context): void
     {
-        $usage = $this->changeByContext($usage, $context);
-
         switch ($context->value()) {
 
             case LimitContext::SESSION:
@@ -87,46 +110,19 @@ class UsageRepo
 
                 $this->db->replace(
                     self::TABLE,
-                    array(
-                        'parent_id' => array(ilDBConstants::T_INTEGER, $usage->getParentId()),
-                        'page_id' => array(ilDBConstants::T_INTEGER, $usage->getPageId()),
-                        'file_id' => array(ilDBConstants::T_TEXT, $usage->getFileId()),
-                        'user_id' => array(ilDBConstants::T_INTEGER, $usage->getUserId()),
-                    ),
-                    array(
-                        'plays' => array(ilDBConstants::T_INTEGER, $usage->getPlays()),
-                        'seconds' => array(ilDBConstants::T_FLOAT, $usage->getSeconds()),
-                        'pass' => array(ilDBConstants::T_INTEGER, $usage->getPass()),
-                        'active_id' => array(ilDBConstants::T_INTEGER, $usage->getActiveId()),
-                    )
+                    [
+                        'parent_id' => [ilDBConstants::T_INTEGER, $usage->getParentId()],
+                        'page_id' => [ilDBConstants::T_INTEGER, $usage->getPageId()],
+                        'file_id' => [ilDBConstants::T_TEXT, $usage->getFileId()],
+                        'user_id' => [ilDBConstants::T_INTEGER, $usage->getUserId()],
+                    ],
+                    [
+                        'plays' => [ilDBConstants::T_INTEGER, $usage->getPlays()],
+                        'seconds' => [ilDBConstants::T_FLOAT, $usage->getSeconds()],
+                        'pass' => [ilDBConstants::T_INTEGER, $usage->getPass()],
+                        'active_id' => [ilDBConstants::T_INTEGER, $usage->getActiveId()],
+                    ]
                 );
         }
-    }
-
-    /**
-     * Change the usage if the status of the context has changed
-     * Plays and seconds should be reset if a new test pass has started
-     */
-    private function changeByContext(Usage $usage, LimitContext $context): Usage
-    {
-        if ($context->value() == LimitContext::TESTPASS) {
-            $test_id = ilObjTest::_getTestIDFromObjectID($usage->getParentId());
-            $active_id = ilObjTest::_getActiveIdOfUser($usage->getUserId(), $test_id);
-            $pass = ilObjTest::_getPass($active_id);
-
-            if ($usage->getPass() !== $pass || $usage->getActiveId() !== $active_id) {
-                return new Usage(
-                    $usage->getUserId(),
-                    $usage->getParentId(),
-                    $usage->getPageId(),
-                    $usage->getFileId(),
-                    0,
-                    null,
-                    $pass,
-                    isset($active_id) ? (int) $active_id : null
-                );
-            }
-        }
-        return $usage;
     }
 }

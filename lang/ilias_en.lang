@@ -35,7 +35,7 @@ play_with_pause_info#:#The playback can be interrupted by a 'Pause' button and c
 play_without_pause#:#Prevent Pause
 play_without_pause_info#:#There is no 'Pause' button. When the user navigated to another question during playback and comed back, then the replay is consumed.
 limit_plays#:#Number of Plays
-limit_plays_preview#:#(unlimited in preview)
+limit_plays_preview#:# in preview
 limit_plays_user#:#for the user
 limit_plays_session#:#in the session
 limit_plays_testpass#:#in the test pass

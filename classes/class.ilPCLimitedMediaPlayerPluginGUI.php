@@ -431,9 +431,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         if (isset($usage)) {
             if ($this->getViewMode() == self::VIEW_PREVIEW) {
-                $limit_plays_suffix = $this->plugin->txt('limit_plays_preview');
+                $limit_plays_suffix = ', ' . $this->plugin->txt('limit_plays_preview');
             } else {
-                $limit_plays_suffix = $this->plugin->txt('limit_plays_' . $medium->getLimitContext()->value());
+                $limit_plays_suffix = ', ' . $this->plugin->txt('limit_plays_' . $medium->getLimitContext()->value());
 
                 if (!$limit->isDefault()) {
                     $limit_plays_suffix .= ' ' . $this->plugin->txt('limit_plays_adapted');
@@ -441,7 +441,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             }
 
             $tpl->setVariable("MAX_PLAYS", ($limit->getPlays() ?? $this->plugin->txt('runtime_no_limit'))
-                . ' ' . $limit_plays_suffix);
+                . $limit_plays_suffix);
             $tpl->setVariable("MAX_PLAYS_TEXT", $this->plugin->txt("runtime_max_plays"));
 
             $tpl->setVariable("CURRENT_PLAYS", $usage->getPlays());
