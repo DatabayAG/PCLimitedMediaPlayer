@@ -39,7 +39,20 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 
     public function factory(): Factory
     {
-        return $this->factory ?? new Factory();
+        return $this->factory ??= new Factory();
     }
+
+    public function onClone(array &$a_properties, string $a_plugin_version) : void
+    {
+
+    }
+
+    public function onDelete(array $a_properties, string $a_plugin_version, bool $move_operation = false) : void
+    {
+        if ($move_operation) {
+            return;
+        }
+    }
+
 
 }
