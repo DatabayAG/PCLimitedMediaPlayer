@@ -55,12 +55,22 @@ class MediumRepo
     }
 
 
-    public function setFileUsed($file_id): void
+    public function setFileUsed(string $file_id): void
     {
         $id = $this->storage->manage()->find($file_id);
         if ($id !== null) {
             $this->stakeholder_repo->deregister($id, $this->upload_stakeholder);
             $this->stakeholder_repo->register($id, $this->use_stakeholder);
+        }
+    }
+
+    public function removeFileUsage(string $file_id): void
+    {
+        if (!$this->isFileReferenced($file_id)) {
+            $id = $this->storage->manage()->find($file_id);
+            if ($id !== null) {
+                $this->storage->manage()->remove($id, $this->use_stakeholder);
+            }
         }
     }
 
@@ -83,6 +93,19 @@ class MediumRepo
                 }
             }
         }
+    }
+
+    public function isFileReferenced($file_id): bool
+    {
+        $query = "SELECT page_id FROM page_object WHERE parent_type = 'qpl' "
+            . " AND " . $this->db->like('content', 'text', "%$file_id%", false)
+            . " LIMIT 1";
+        $result = $this->db->query($query);
+
+        if ($row = $this->db->fetchAssoc($result)) {
+            return true;
+        }
+        return false;
     }
 
     /**

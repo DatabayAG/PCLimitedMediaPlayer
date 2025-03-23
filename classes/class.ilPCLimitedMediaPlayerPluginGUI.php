@@ -167,7 +167,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     private function saveForm(array $data, bool $create): bool
     {
-        $medium = Medium::fromProperties($this->plugin->getPageId(), $this->getProperties())
+        $previous = $medium = Medium::fromProperties($this->plugin->getPageId(), $this->getProperties());
+
+        $medium = (clone $previous)
             ->setMediumTitle($data['general']['title'] ?? 'Medium')
             ->setFileId($data['general']['file_id'][0] ?? '')
             ->setLimitPlays($data['general']['limit_plays'] ?? null)
@@ -189,11 +191,21 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         }
 
         if ($success) {
-            if (!empty($medium->getFileId())) {
-                $this->medium_repo->setFileUsed($medium->getFileId());
+            if ($medium->getFileId() !== $previous->getFileId()) {
+                if (!empty($medium->getFileId())) {
+                    $this->medium_repo->setFileUsed($medium->getFileId());
+                }
+                if (!empty($previous->getFileId())) {
+                    $this->medium_repo->removeFileUsage($previous->getFileId());
+                }
             }
-            if (!empty($medium->getPreviewId())) {
-                $this->medium_repo->setFileUsed($medium->getPreviewId());
+            if ($medium->getPreviewId() !== $previous->getPreviewId()) {
+                if (!empty($medium->getPreviewId())) {
+                    $this->medium_repo->setFileUsed($medium->getPreviewId());
+                }
+                if (!empty($previous->getPreviewId())) {
+                    $this->medium_repo->removeFileUsage($previous->getPreviewId());
+                }
             }
         }
         $this->medium_repo->cleanupUnusedFiles();
