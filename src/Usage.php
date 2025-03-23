@@ -81,7 +81,7 @@ class Usage
 
     /**
      * Played seconds for the current replays
-     * (null if a new replay is not started or the last replays has ended regularly)
+     * (null if a new replay is not started or the last replay has ended regularly)
      */
     public function getSeconds(): ?float
     {

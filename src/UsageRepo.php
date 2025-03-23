@@ -77,7 +77,7 @@ class UsageRepo
                 );
                 ilSession::set(
                     'limply_seconds-' . $usage->getParentId() . '-' . $usage->getPageId() . '-' . $usage->getFileId() . '-' . $usage->getUserId(),
-                    $usage->getPlays()
+                    $usage->getSeconds()
                 );
                 break;
 

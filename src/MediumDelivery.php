@@ -13,7 +13,7 @@ use ilIniFile;
 
 /**
  * Delivery of media in the resource storage
- * Can hopefully be replaced by FileDelivery service with signed delivery in ILIAS 9
+ * Can later be replaced by FileDelivery service
  */
 class MediumDelivery
 {

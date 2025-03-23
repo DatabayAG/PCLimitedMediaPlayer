@@ -23,7 +23,7 @@ class RequestVariables
         return $this->wrapper->has($key);
     }
 
-    public function bool(string $key, ?string $default = null): ?bool
+    public function bool(string $key, ?bool $default = null): ?bool
     {
         if ($this->wrapper->has($key)) {
             $value = $this->wrapper->retrieve($key, $this->refinery->kindlyTo()->string());

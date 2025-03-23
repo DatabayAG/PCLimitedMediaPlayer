@@ -362,11 +362,11 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             'page_id' => $this->plugin->getPageId(),
             'file_id' => $medium->getFileId(),
             'preview_id' => $medium->getPreviewId(),
-            'width' => max($medium->getWidth(), 200),
-            'height' => max($medium->getHeight(), 50),
-            'play_with_pause' => $medium->getPlayWithPause(),
+            'width' => $medium->getWidth(),
+            'height' =>  max($medium->getHeight(), 50),
+            'play_with_pause' => $medium->getPlayWithPause() ? 1 : 0,
             'limit_context' => $limit_context->value(),
-            'limit_plays' => (int) $limit->getPlays(),
+            'limit_plays' => $limit->getPlays(),
         ];
         foreach ($params as $name => $value) {
             $this->ctrl->setParameterByClass(ilPCLimitedMediaPlayerGUI::class, $name, $value);
@@ -374,7 +374,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $url = $this->ctrl->getLinkTargetByClass([ilUIPluginRouterGUI::class, ilPCLimitedMediaPlayerGUI::class]);
 
         $tpl->setVariable('PLAYER_URL', $url);
-        $tpl->setVariable('PLAYER_WIDTH', max($medium->getWidth(), 200));
+        $tpl->setVariable('PLAYER_WIDTH', $medium->getWidth() ?? '100%');
         $tpl->setVariable('PLAYER_HEIGHT', max($medium->getHeight(), 50));
 
         return $tpl->get();

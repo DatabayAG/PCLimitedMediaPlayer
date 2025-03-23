@@ -45,7 +45,7 @@ class MediumRepo
         return $this->storage->manage()->getCurrentRevision($id)->getTitle();
     }
 
-    public function getMimeType($file_id): ?string
+    public function getMimeType(?string $file_id): ?string
     {
         $id = $this->storage->manage()->find($file_id);
         if ($id === null) {
