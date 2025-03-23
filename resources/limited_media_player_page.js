@@ -47,49 +47,50 @@ il.PCLimitedMediaPlayerPage = new function() {
 
     this.playClicked = function(event) {
         event.preventDefault();
-        var mob_id = $(event.currentTarget).attr('data-id');
+        var file_id = $(event.currentTarget).attr('data-id');
 
-        $('#limplyModal'+mob_id).modal('show');
-        self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').val());
-        self.sendAction(mob_id, 'play', 0);
+        $('#limplyModal'+file_id).modal('show');
+        self.sendAction(file_id, 'volume', $('#limply' + file_id + ' .limply-volume').val());
+        self.sendAction(file_id, 'play', 0);
     };
 
 	this.pauseClicked = function(event) {
         event.preventDefault();
-        var mob_id = $(event.currentTarget).attr('data-id');
-        $('#limplyModal'+mob_id).modal('hide');
-        self.sendAction(mob_id, 'pause', 0);
+        var file_id = $(event.currentTarget).attr('data-id');
+        $('#limplyModal'+file_id).modal('hide');
+        self.sendAction(file_id, 'pause', 0);
     };
 
 	this.continueClicked = function(event) {
         event.preventDefault();
-        var mob_id = $(event.currentTarget).attr('data-id');
+        var file_id = $(event.currentTarget).attr('data-id');
 
-        $('#limplyModal'+mob_id).modal({show: true, backdrop: 'static', keyboard: false});
-        $('#limplyModal'+mob_id+' button.close').hide();
-        self.sendAction(mob_id, 'volume', $('#limply' + mob_id + ' .limply-volume').val());
-        self.sendAction(mob_id, 'continue', 0);
+        $('#limplyModal'+file_id).modal({show: true, backdrop: 'static', keyboard: false});
+        $('#limplyModal'+file_id+' button.close').hide();
+        self.sendAction(file_id, 'volume', $('#limply' + file_id + ' .limply-volume').val());
+        self.sendAction(file_id, 'continue', 0);
     };
 
     this.volumeChanged = function(event) {
         event.preventDefault();
-        var mob_id = $(event.currentTarget).attr('data-id');
-        self.sendAction(mob_id, 'volume', $(event.currentTarget).val());
+        var file_id = $(event.currentTarget).attr('data-id');
+        self.sendAction(file_id, 'volume', $(event.currentTarget).val());
     };
 
     /**
      * send an action message to the playing iframe
-     * @param medium_id
+     * @param file_id
      * @param action
      * @param value
      */
-	this.sendAction = function(medium_id, action, value) {
+	this.sendAction = function(file_id, action, value) {
 	    var data = {
 	        action: action,
 	        value: value
 	    };
+      console.log('sendAction', data);
 
-        $('#limply' + medium_id + ' iframe').get(0).contentWindow.postMessage(data, '*');
+        $('#limply' + file_id + ' iframe').get(0).contentWindow.postMessage(data, '*');
     };
 
     /**
@@ -99,6 +100,7 @@ il.PCLimitedMediaPlayerPage = new function() {
 	this.getUpdate = function(event)
     {
         var data = event.originalEvent.data;
+        console.log('getUpdate', data);
         self.updateDisplay(data);
     };
 
@@ -108,21 +110,21 @@ il.PCLimitedMediaPlayerPage = new function() {
      */
     this.updateDisplay = function(data)
     {
-        $('#limply' + data.mob_id + ' .current_plays').html(data.current_plays);
-        $('#limply' + data.mob_id + ' .current_seconds').html(Math.floor(Math.max(data.current_seconds, 0)));
+        $('#limply' + data.file_id + ' .current_plays').html(data.current_plays);
+        $('#limply' + data.file_id + ' .current_seconds').html(Math.floor(Math.max(data.current_seconds, 0)));
 
-        var b_play = $('#limply' + data.mob_id + ' .limply-play');
-        var b_pause =  $('#limply' + data.mob_id + ' .limply-pause');
-        var b_continue =  $('#limply' + data.mob_id + ' .limply-continue');
-        var d_volume = $('#limply' + data.mob_id + ' .limply-volume-div');
-        var d_modal =  $('#limplyModal'+data.mob_id);
+        var b_play = $('#limply' + data.file_id + ' .limply-play');
+        var b_pause =  $('#limply' + data.file_id + ' .limply-pause');
+        var b_continue =  $('#limply' + data.file_id + ' .limply-continue');
+        var d_volume = $('#limply' + data.file_id + ' .limply-volume-div');
+        var d_modal =  $('#limplyModal'+data.file_id);
 
 
         switch(data.status) {
             case 'start':
                 if (b_play.hasClass('hidden'))
                 {
-                    $('#limplyModal'+data.mob_id).modal('hide');
+                    $('#limplyModal'+data.file_id).modal('hide');
                 }
                 b_play.removeClass('hidden');
                 b_pause.addClass('hidden');

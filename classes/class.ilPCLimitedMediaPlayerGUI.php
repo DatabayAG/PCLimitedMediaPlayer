@@ -10,6 +10,8 @@ use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
 use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
 use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\PreferencesRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\MediumRepo;
+use ILIAS\Plugin\LimitedMediaPlayer\MediumDelivery;
 
 /**
  * GUI class to show the player and handle updates (called from iframe)
@@ -24,12 +26,14 @@ class ilPCLimitedMediaPlayerGUI
 
     private ilCtrlInterface $ctrl;
     private GlobalHttpState $http;
-    private RequestVariables $get;
-    private RequestVariables $post;
 
     private ilPCLimitedMediaPlayerPlugin $plugin;
+    private MediumRepo $medium_repo;
     private UsageRepo $usage_repo;
     private PreferencesRepo $preferences_repo;
+    private RequestVariables $get;
+    private RequestVariables $post;
+    private MediumDelivery $delivery;
 
     /**
      * Parameters stored with the limited media object, added to the request
@@ -60,8 +64,8 @@ class ilPCLimitedMediaPlayerGUI
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
         $this->ctrl = $DIC->ctrl();
         $this->http = $DIC->http();
-        $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $DIC->refinery());
-        $this->post = new RequestVariables($DIC->http()->wrapper()->post(), $DIC->refinery());
+        $this->get = $this->plugin->factory()->getVariables();
+        $this->post =$this->plugin->factory()->postVariables();
 
         $this->parent_id = (int) $this->get->integer('parent_id');
         $this->page_id = (int) $this->get->integer('page_id');
@@ -73,10 +77,13 @@ class ilPCLimitedMediaPlayerGUI
         $this->limit_plays = (int) $this->get->integer('limit_plays');
         $this->play_with_pause = (bool) $this->get->bool('play_with_pause');
 
+        $this->medium_repo = $this->plugin->factory()->mediumRepo();
         $this->usage_repo = $this->plugin->factory()->usageRepo();
         $this->preferences_repo = $this->plugin->factory()->preferencesRepo();
         $this->usage = $this->usage_repo->get($DIC->user()->getId(), $this->parent_id, $this->page_id, $this->file_id, $this->limit_context);
         $this->volume = $this->preferences_repo->getVolume();
+        $this->delivery = $this->plugin->factory()->mediumDelivery();
+
     }
 
     public function executeCommand(): void
@@ -86,8 +93,8 @@ class ilPCLimitedMediaPlayerGUI
             case self::CMD_UPDATE_USAGE:
             case self::CMD_UPDATE_VOLUME:
                 $this->$cmd();
+                break;
 
-                // no break
             default:
                 echo 'unsupported command';
         }
@@ -105,27 +112,19 @@ class ilPCLimitedMediaPlayerGUI
         $this->current_seconds = (int) $this->usage->getSeconds();
         $this->status = $this->usage->getStatus($this->limit_plays, $this->play_with_pause);
 
-
-        // determine files
-
-        $file_path = ilWACSignedPath::signFile('');
-        $mime = '';
-
-        if ($this->preview_id) {
-            $preview_path = ilWACSignedPath::signFile('');
-        } else {
-            $preview_path = ilUtil::getImagePath('mcst_preview.svg');
-        }
+        $mime_type = $this->medium_repo->getMimeType($this->file_id) ?? '';
+        $file_url = $this->delivery->getUrl($this->file_id) ?? '';
+        $preview_url = $this->delivery->getUrl($this->preview_id) ?? '';
 
         $tpl = $this->plugin->getTemplate("tpl.player.html");
 
         $tpl->setCurrentBlock('preview');
-        $tpl->setVariable("FILE", $preview_path);
+        $tpl->setVariable("FILE", $preview_url);
         $tpl->setVariable("HEIGHT", $this->height);
         $tpl->setVariable("WIDTH", $this->width);
         $tpl->parseCurrentBlock();
 
-        // show only startpic if limit is reached
+        //show only preview if limit is reached
         if ($this->status->value() == Status::LIMIT) {
             $this->http->saveResponse($this->http->response()->withBody(Streams::ofString($tpl->get())));
             $this->http->sendResponse();
@@ -143,7 +142,7 @@ class ilPCLimitedMediaPlayerGUI
         $volume_url = $this->ctrl->getLinkTarget($this, 'updateVolume');
 
         $config = array(
-            'type' => substr($mime, 0, 5) == 'audio' ? 'audio' : 'video',
+            'type' => substr($mime_type, 0, 5) == 'audio' ? 'audio' : 'video',
             'file_id' => $this->file_id,
             'play_with_pause' => $this->play_with_pause,
             'current_plays' => $this->current_plays,
@@ -155,26 +154,27 @@ class ilPCLimitedMediaPlayerGUI
         );
 
         $tpl->setCurrentBlock($config['type']);
-        $tpl->setVariable("FILE", $file_path);
+        $tpl->setVariable("FILE", $file_url);
         $tpl->setVariable("WIDTH", $this->width);
         $tpl->setVariable("HEIGHT", $this->height);
-        $tpl->setVariable("MIME", $mime);
+        $tpl->setVariable("MIME", $mime_type);
         $tpl->parseCurrentBlock();
 
         $scripts = [iljQueryUtil::getLocaljQueryPath()];
         $scripts = array_merge($scripts, ilPlayerUtil::getLocalMediaElementJsPath());
         $scripts[] = $this->plugin->getDirectory() . '/resources/limited_media_player_frame.js';
+
         foreach ($scripts as $script) {
-            $tpl->setCurrentBlock('$script');
+            $tpl->setCurrentBlock('script');
             $tpl->setVariable("SCRIPT_URL", $script);
             $tpl->parseCurrentBlock();
         }
 
         $styles = [ilPlayerUtil::getLocalMediaElementCssPath()];
-        $styles[] = $this->plugin->getDirectory() . '/resources/limited_media_player_style.js';
+        $styles[] = $this->plugin->getDirectory() . '/resources/limited_media_player_style.css';
         foreach ($styles as $style) {
-            $tpl->setCurrentBlock('$script');
-            $tpl->setVariable("SCRIPT_URL", $script);
+            $tpl->setCurrentBlock('style');
+            $tpl->setVariable("STYLE_URL", $style);
             $tpl->parseCurrentBlock();
         }
 
@@ -197,7 +197,7 @@ class ilPCLimitedMediaPlayerGUI
         $this->usage_repo->save($this->usage, $this->limit_context);
 
         $this->http->saveResponse($this->http->response()->withBody(Streams::ofString(json_encode([
-                'status' => (string) $this->usage->getStatus($this->limit_plays, false),
+                'status' => (string) $this->usage->getStatus($this->limit_plays, false)->value(),
                 'seconds' => (float) $this->usage->getSeconds(),
                 'plays' => (int) $this->usage->getPlays()
             ]))));

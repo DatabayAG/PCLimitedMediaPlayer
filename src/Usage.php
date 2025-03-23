@@ -127,7 +127,7 @@ class Usage
             $status = Status::LIMIT;
         }
 
-        if ($status == Status::PLAY && $pause_allowed) {
+        if ($status === Status::PLAY && $pause_allowed) {
             // set to paused if allowed
             // this shows the 'continue' button instead of the 'play' button
             $status = Status::PAUSE;

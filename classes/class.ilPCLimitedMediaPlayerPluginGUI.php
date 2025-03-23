@@ -18,6 +18,7 @@ use ILIAS\Plugin\LimitedMediaPlayer\RequestVariables;
 use ILIAS\Plugin\LimitedMediaPlayer\MediumRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\LimitRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
+use ILIAS\HTTP\GlobalHttpState;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
@@ -42,6 +43,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     private ilPCMediaObject $page_media_object;
 
     private ilCtrlInterface $ctrl;
+    private GlobalHttpState $http;
     private ilGlobalTemplateInterface $tpl;
 
     private ilTabsGUI $tabs;
@@ -71,15 +73,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $this->ui_factory = $DIC->ui()->factory();
         $this->ui_renderer = $DIC->ui()->renderer();
         $this->refinery = $DIC->refinery();
-        $this->upload_handler = new ilPCLimitedMediaPlayerUploadHandlerGUI(new StakeholderForUpload());
         $this->request = $DIC->http()->request();
 
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
         $this->medium_repo = $this->plugin->factory()->mediumRepo();
         $this->limit_repo = $this->plugin->factory()->limitRepo();
         $this->usage_repo = $this->plugin->factory()->usageRepo();
-
-        $this->get = new RequestVariables($DIC->http()->wrapper()->query(), $this->refinery);
+        $this->upload_handler = $this->plugin->factory()->uploadHandler();
+        $this->get = $this->plugin->factory()->getVariables();
     }
 
     public function executeCommand(): void
@@ -386,7 +387,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     {
         $preferences_repo = $this->plugin->factory()->preferencesRepo();
 
-        if ($status->value() == Status::LIMIT) {
+        if ($status->value() === Status::LIMIT) {
             return '';
         }
 

@@ -26,7 +26,7 @@ class MediumRepo
         ResourceStorage $storage,
         StakeholderRepository $stakeholder_repo,
         ResourceStakeholder $upload_stakeholder,
-        ResourceStakeholder $use_stakeholder
+        ResourceStakeholder $use_stakeholder,
     ) {
         $this->db = $db;
         $this->storage = $storage;
@@ -35,9 +35,7 @@ class MediumRepo
         $this->use_stakeholder = $use_stakeholder;
     }
 
-    /**
-     * Get the name of a resource file
-     */
+
     public function getFileName($file_id): ?string
     {
         $id = $this->storage->manage()->find($file_id);
@@ -46,6 +44,16 @@ class MediumRepo
         }
         return $this->storage->manage()->getCurrentRevision($id)->getTitle();
     }
+
+    public function getMimeType($file_id): ?string
+    {
+        $id = $this->storage->manage()->find($file_id);
+        if ($id === null) {
+            return null;
+        }
+        return $this->storage->manage()->getCurrentRevision($id)->getInformation()->getMimeType();
+    }
+
 
     public function setFileUsed($file_id): void
     {

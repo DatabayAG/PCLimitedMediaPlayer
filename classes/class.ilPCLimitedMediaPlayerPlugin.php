@@ -19,7 +19,7 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 
     public function getJavascriptFiles(string $a_mode): array
     {
-        return ['resources/limited_media_player_pages.js'];
+        return ['resources/limited_media_player_page.js'];
     }
 
     public function getCssFiles(string $a_mode): array
