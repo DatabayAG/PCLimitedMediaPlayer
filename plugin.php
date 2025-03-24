@@ -14,3 +14,4 @@ $ilias_min_version = "8.18";
 $ilias_max_version = "8.999";
 $responsible = "Fred Neumann";
 $responsible_mail = "fneumann@databay.de";
+$supports_export = true;

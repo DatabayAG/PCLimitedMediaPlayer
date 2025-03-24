@@ -13,6 +13,7 @@ use ILIAS\ResourceStorage\Stakeholder\ResourceStakeholder;
 use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderRepository;
 use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderDBRepository;
 use ilDBConstants;
+use ILIAS\Filesystem\Stream\FileStream;
 
 class MediumRepo
 {
@@ -36,7 +37,16 @@ class MediumRepo
         $this->use_stakeholder = $use_stakeholder;
     }
 
-    public function getFileName($file_id): ?string
+    public function getFileStream(string $file_id): ?FileStream
+    {
+        $id = $this->storage->manage()->find($file_id);
+        if ($id === null) {
+            return null;
+        }
+        return $this->storage->consume()->stream($id)->getStream();
+    }
+
+    public function getFileName(string $file_id): ?string
     {
         $id = $this->storage->manage()->find($file_id);
         if ($id === null) {
