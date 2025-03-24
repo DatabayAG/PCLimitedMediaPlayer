@@ -65,15 +65,15 @@ class Factory
         return $this->instances[PreferencesRepo::class] ??= new PreferencesRepo();
     }
 
-    public function getVariables() : RequestVariables
+    public function getVariables(): RequestVariables
     {
-        return $this->instances[PreferencesRepo::class]['get'] ??=
+        return $this->instances[RequestVariables::class]['get'] ??=
             new RequestVariables($this->http->wrapper()->query(), $this->refinery);
     }
 
-    public function postVariables() : RequestVariables
+    public function postVariables(): RequestVariables
     {
-        return $this->instances[PreferencesRepo::class]['post'] ??=
+        return $this->instances[RequestVariables::class]['post'] ??=
             new RequestVariables($this->http->wrapper()->post(), $this->refinery);
     }
 

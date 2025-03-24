@@ -196,7 +196,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                     $this->medium_repo->setFileUsed($medium->getFileId());
                 }
                 if (!empty($previous->getFileId())) {
-                    $this->medium_repo->removeFileUsage($previous->getFileId());
+                    $this->medium_repo->removeFileUsage($previous->getFileId(), $this->plugin->getPageId());
                 }
             }
             if ($medium->getPreviewId() !== $previous->getPreviewId()) {
@@ -204,7 +204,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                     $this->medium_repo->setFileUsed($medium->getPreviewId());
                 }
                 if (!empty($previous->getPreviewId())) {
-                    $this->medium_repo->removeFileUsage($previous->getPreviewId());
+                    $this->medium_repo->removeFileUsage($previous->getPreviewId(), $this->plugin->getPageId());
                 }
             }
         }

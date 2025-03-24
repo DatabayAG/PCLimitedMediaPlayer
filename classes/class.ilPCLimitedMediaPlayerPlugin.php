@@ -42,17 +42,31 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
         return $this->factory ??= new Factory();
     }
 
-    public function onClone(array &$a_properties, string $a_plugin_version) : void
+    public function onClone(array &$a_properties, string $a_plugin_version): void
     {
+        $medium_repo = $this->factory()->mediumRepo();
 
+        if (!empty($a_properties['file_id'])) {
+            $a_properties['file_id'] = $medium_repo->cloneFile($a_properties['file_id']) ?? '';
+        }
+        if (!empty($a_properties['preview_id'])) {
+            $a_properties['preview_id'] = $medium_repo->cloneFile($a_properties['preview_id']) ?? '';
+        }
     }
 
-    public function onDelete(array $a_properties, string $a_plugin_version, bool $move_operation = false) : void
+    public function onDelete(array $a_properties, string $a_plugin_version, bool $move_operation = false): void
     {
         if ($move_operation) {
             return;
         }
+
+        $medium_repo = $this->factory()->mediumRepo();
+
+        if (!empty($a_properties['file_id'])) {
+            $medium_repo->removeFileUsage($a_properties['file_id'], $this->getPageId());
+        }
+        if (!empty($a_properties['preview_id'])) {
+            $medium_repo->removeFileUsage($a_properties['preview_id'], $this->getPageId());
+        }
     }
-
-
 }

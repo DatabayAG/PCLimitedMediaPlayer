@@ -12,6 +12,7 @@ use ILIAS\ResourceStorage\Services as ResourceStorage;
 use ILIAS\ResourceStorage\Stakeholder\ResourceStakeholder;
 use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderRepository;
 use ILIAS\ResourceStorage\Stakeholder\Repository\StakeholderDBRepository;
+use ilDBConstants;
 
 class MediumRepo
 {
@@ -35,7 +36,6 @@ class MediumRepo
         $this->use_stakeholder = $use_stakeholder;
     }
 
-
     public function getFileName($file_id): ?string
     {
         $id = $this->storage->manage()->find($file_id);
@@ -54,7 +54,6 @@ class MediumRepo
         return $this->storage->manage()->getCurrentRevision($id)->getInformation()->getMimeType();
     }
 
-
     public function setFileUsed(string $file_id): void
     {
         $id = $this->storage->manage()->find($file_id);
@@ -64,14 +63,24 @@ class MediumRepo
         }
     }
 
-    public function removeFileUsage(string $file_id): void
+    public function removeFileUsage(string $file_id, int $page_id): void
     {
-        if (!$this->isFileReferenced($file_id)) {
+        if (!$this->isFileOnOtherPages($file_id, $page_id)) {
             $id = $this->storage->manage()->find($file_id);
             if ($id !== null) {
                 $this->storage->manage()->remove($id, $this->use_stakeholder);
             }
         }
+    }
+
+    public function cloneFile(string $file_id): ?string
+    {
+        $id = $this->storage->manage()->find($file_id);
+        if ($id !== null) {
+            $new_id = $this->storage->manage()->clone($id);
+            return (string) $new_id;
+        }
+        return '';
     }
 
     public function cleanupUnusedFiles()
@@ -95,10 +104,11 @@ class MediumRepo
         }
     }
 
-    public function isFileReferenced($file_id): bool
+    private function isFileOnOtherPages(string $file_id, int $page_id): bool
     {
         $query = "SELECT page_id FROM page_object WHERE parent_type = 'qpl' "
-            . " AND " . $this->db->like('content', 'text', "%$file_id%", false)
+            . " AND page_id <> " . $this->db->quote($page_id, ilDBConstants::T_INTEGER)
+            . " AND " . $this->db->like('content', ilDBConstants::T_TEXT, "%$file_id%", false)
             . " LIMIT 1";
         $result = $this->db->query($query);
 
