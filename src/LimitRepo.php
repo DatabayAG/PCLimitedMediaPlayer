@@ -20,6 +20,28 @@ class LimitRepo
     }
 
     /**
+     * Get a limit based on the given criteria
+     */
+    public function get(int $parent_id, ?int $page_id, ?string $file_id, ?int $user_id): Limit
+    {
+        $query = "SELECT * FROM " . self::TABLE . " WHERE "
+            . implode(' AND ', [
+                $this->strict('parent_id', ilDBConstants::T_INTEGER, $parent_id),
+                $this->strict('page_id', ilDBConstants::T_INTEGER, $page_id),
+                $this->strict('file_id', ilDBConstants::T_TEXT, $file_id),
+                $this->strict('user_id', ilDBConstants::T_INTEGER, $user_id)
+            ]);
+
+        $result = $this->db->query($query);
+
+        if ($row = $this->db->fetchAssoc($result)) {
+            return new Limit($row['id'], $row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
+        }
+
+        return new Limit(null, $parent_id, $page_id, $file_id, $user_id, null);
+    }
+
+    /**
      * Get all limits defined for a parent object
      * @return  Limit[]
      */
@@ -55,7 +77,7 @@ class LimitRepo
         /** @var Limit[] $limits */
         $limits = [$default];
         while ($row = $this->db->fetchAssoc($result)) {
-            $limits[] = new Limit($row['id'], $row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays'], false);
+            $limits[] = new Limit($row['id'], $row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
         }
 
         usort($limits, fn (Limit $a, Limit $b) => $a->getPriority() <=> $b->getPriority());
@@ -77,6 +99,10 @@ class LimitRepo
 
     public function save(Limit $limit): void
     {
+        if ($limit->getId() === null) {
+            $limit->setId($this->db->nextId(self::TABLE));
+        }
+
         $this->db->replace(
             self::TABLE,
             [
@@ -101,7 +127,7 @@ class LimitRepo
         if ($value === null) {
             return "$field IS NULL";
         }
-        return "$field=" . $this->db->quote($value, $type);
+        return "$field = " . $this->db->quote($value, $type);
     }
 
     /**
@@ -113,6 +139,6 @@ class LimitRepo
         if ($value === null) {
             return "$field IS NULL";
         }
-        return "($field IS NULL OR $field=" . $this->db->quote($value, $type) . ')';
+        return "($field IS NULL OR $field = " . $this->db->quote($value, $type) . ')';
     }
 }
