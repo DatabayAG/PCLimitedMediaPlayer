@@ -13,9 +13,6 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
 
     public function init() : void
     {
-        echo "init";
-        exit;
-
         global $DIC;
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
         $this->medium_repo = $this->plugin->factory()->mediumRepo();
@@ -24,9 +21,6 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
 
     public function getXmlExportHeadDependencies(string $a_entity, string $a_target_release, array $a_ids) : array
     {
-        echo "getXmlExportHeadDependencies";
-        exit;
-
         $file_ids =[];
         foreach ($a_ids as $id) {
             $properties = self::getPCProperties($id);
@@ -53,9 +47,6 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
 
     public function getXmlRepresentation(string $a_entity, string $a_schema_version, string $a_id) : string
     {
-        echo "getXmlRepresentation";
-        exit;
-
         $this->xml_writer->xmlStartTag('PCLimitedMediaPlayer');
         foreach (self::getPCProperties($a_id) as $key => $value) {
             $this->xml_writer->xmlElement($this->toTag($key), null, (string) $value);
@@ -77,8 +68,6 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
 
     public function getXmlExportTailDependencies(string $a_entity, string $a_target_release, array $a_ids) : array
     {
-        echo "getXmlExportTailDependencies";
-        exit;
         return [];
     }
 
