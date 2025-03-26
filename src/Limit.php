@@ -30,12 +30,24 @@ class Limit
         $this->default = $default;
     }
 
+    public static function fromRow(array $row): Limit
+    {
+        return new Limit(
+            (int) $row['id'],
+            (int) $row['parent_id'],
+            isset($row['page_id']) ? (int) $row['page_id'] : null,
+            isset($row['file_id']) ? (string) $row['file_id'] : null,
+            isset($row['user_id']) ? (int) $row['user_id'] : null,
+            isset($row['plays']) ? (int) $row['plays'] : null
+        );
+    }
+
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function setId(int $id): int
+    public function setId(int $id)
     {
         $this->id = $id;
     }
@@ -99,5 +111,16 @@ class Limit
             default:
                 return 3;   // all user all media
         }
+    }
+
+    /**
+     * Get the medium key for selection in the control plugin
+     */
+    public function getMediumKey(): ?string
+    {
+        if ($this->page_id !== null && $this->file_id !== null) {
+            return $this->page_id . '_' . $this->file_id;
+        }
+        return null;
     }
 }

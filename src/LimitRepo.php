@@ -35,7 +35,7 @@ class LimitRepo
         $result = $this->db->query($query);
 
         if ($row = $this->db->fetchAssoc($result)) {
-            return new Limit($row['id'], $row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
+            return Limit::fromRow($row);
         }
 
         return new Limit(null, $parent_id, $page_id, $file_id, $user_id, null);
@@ -51,7 +51,7 @@ class LimitRepo
 
         $limits = [];
         while ($row = $this->db->fetchAssoc($result)) {
-            $limits[] = new Limit($row['id'], $row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
+            $limits[] = Limit::fromRow($row);
         }
 
         return $limits;
@@ -77,7 +77,7 @@ class LimitRepo
         /** @var Limit[] $limits */
         $limits = [$default];
         while ($row = $this->db->fetchAssoc($result)) {
-            $limits[] = new Limit($row['id'], $row['parent_id'], $row['page_id'], $row['mob_id'], $row['user_id'], $row['limit_plays']);
+            $limits[] = Limit::fromRow($row);
         }
 
         usort($limits, fn (Limit $a, Limit $b) => $a->getPriority() <=> $b->getPriority());
@@ -106,14 +106,14 @@ class LimitRepo
         $this->db->replace(
             self::TABLE,
             [
-                'id' => $limit->getId(),
+                'id' => [ilDBConstants::T_INTEGER, $limit->getId()],
             ],
             [
                 'parent_id' => [ilDBConstants::T_INTEGER, $limit->getParentId()],
                 'page_id' => [ilDBConstants::T_INTEGER, $limit->getPageId()],
                 'file_id' => [ilDBConstants::T_TEXT, $limit->getFileId()],
                 'user_id' => [ilDBConstants::T_INTEGER, $limit->getUserId()],
-                'limit_plays' => [ilDBConstants::T_INTEGER, $limit->getPlays()],
+                'plays' => [ilDBConstants::T_INTEGER, $limit->getPlays()],
             ]
         );
     }
@@ -122,7 +122,7 @@ class LimitRepo
      * Compare nullable field strictly
      * NULL value in db fits only if null is given
      */
-    private function strict(string $field, string $type, ?int $value): string
+    private function strict(string $field, string $type, $value): string
     {
         if ($value === null) {
             return "$field IS NULL";

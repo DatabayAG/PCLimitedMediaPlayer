@@ -129,6 +129,19 @@ class MediumRepo
     }
 
     /**
+     * Get the medium on a page
+     */
+    public function getMedium(?int $page_id, ?string $file_id): ?Medium
+    {
+        if ($page_id !== null && $file_id !== null) {
+            foreach ($this->findMedia((array) $page_id, $file_id) as $medium) {
+                return $medium;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Find the limited media on pages
      *
      * @param   int[]       $a_page_ids     ids of pages to scan
@@ -136,9 +149,9 @@ class MediumRepo
      * @param   string      $a_lang         language of pages to scan
      * @param   int[]|null  $a_mob_id       id of a media object to search for
      *
-     * @return  Medium[]
+     * @return  array<string, Medium>   pageId_fileId => Medium
      */
-    public function findLimitedMedia(array $a_page_ids, ?string $file_id = null): array
+    public function findMedia(array $a_page_ids, ?string $file_id = null): array
     {
         $query = "SELECT page_id, content FROM page_object "
             . " WHERE " . $this->db->in('page_id', $a_page_ids, false, 'integer')
@@ -160,7 +173,8 @@ class MediumRepo
                     $properties[$child->getAttribute('Name')] = $child->nodeValue;
                 }
                 if ($file_id === null || $file_id == $properties['file_id'] ?? '') {
-                    $found[] = Medium::fromProperties($row['page_id'], $properties);
+                    $medium = Medium::fromProperties((int) $row['page_id'], $properties);
+                    $found[$medium->getKey()] = $medium;
                 }
             }
         }

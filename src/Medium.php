@@ -182,4 +182,12 @@ class Medium
         $this->play_with_pause = $play_with_pause;
         return $this;
     }
+
+    /**
+     * Get the medium key for selection in the control plugin
+     */
+    public function getKey(): string
+    {
+        return $this->page_id . '_' . $this->file_id;
+    }
 }
