@@ -32,9 +32,9 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
             }
         }
 
-        $export_fs = LegacyPathHelper::deriveFilesystemFrom($this->getAbsoluteExportDirectory());
-        $export_path = LegacyPathHelper::createRelativePath($this->getAbsoluteExportDirectory());
-        $files_path = $export_path . '/Files';
+        $export_fs = LegacyPathHelper::deriveFilesystemFrom($this->exp->export_run_dir);
+        $export_path = LegacyPathHelper::createRelativePath($this->exp->export_run_dir);
+        $files_path = $export_path . '/PCLimitedMediaFiles';
         $export_fs->createDir($files_path);
 
         foreach (array_unique($file_ids) as $file_id) {
