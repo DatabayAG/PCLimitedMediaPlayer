@@ -281,7 +281,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $this,
             $create ? self::CMD_CREATE : self::CMD_UPDATE
         ), $sections)
-            ->withSubmitCaption($this->lng->txt($create ? 'create' : 'save'));
+            ->withSubmitLabel($this->lng->txt($create ? 'create' : 'save'));
     }
 
     public function cancel(): void
@@ -375,7 +375,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             'file_id' => $medium->getFileId(),
             'preview_id' => $medium->getPreviewId(),
             'width' => $medium->getWidth(),
-            'height' =>  max($medium->getHeight(), 50),
+            'height' => max($medium->getHeight(), 50),
             'play_with_pause' => $medium->getPlayWithPause() ? 1 : 0,
             'limit_context' => $limit_context->value(),
             'limit_plays' => $limit->getPlays(),

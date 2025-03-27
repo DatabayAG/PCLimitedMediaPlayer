@@ -8,6 +8,10 @@ use ILIAS\ResourceStorage\Stakeholder\AbstractResourceStakeholder;
 
 class StakeholderForUpload extends AbstractResourceStakeholder
 {
+    public function __construct()
+    {
+    }
+
     public function getId(): string
     {
         return 'PCLimitedMediaPlayerUpload';

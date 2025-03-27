@@ -8,6 +8,10 @@ use ILIAS\ResourceStorage\Stakeholder\AbstractResourceStakeholder;
 
 class StakeholderForUse extends AbstractResourceStakeholder
 {
+    public function __construct()
+    {
+    }
+
     public function getId(): string
     {
         return 'PCLimitedMediaPlayerUse';
@@ -17,4 +21,5 @@ class StakeholderForUse extends AbstractResourceStakeholder
     {
         return SYSTEM_USER_ID;
     }
+
 }
