@@ -28,7 +28,3 @@ USAGE
 Edit a test question. Chose "Insert Limited Media Player". Select an audio or video file and
 some additional properties, e.g. the counting context or if pausing is allowed. Leave the width and
 height empty for audio and choose an appropriate size for video. Save the element.
-
-Due to restrictions of the plugin interface in ILIAS up to 5.2, the file has to be added as a deactivated
-media object on the page. Please don't edit this object directly but use the element of the limited player
-to edit it. If you want to delete the player element, please delete also the media file.
