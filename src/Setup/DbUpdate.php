@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace ILIAS\Plugin\LimitedMediaPlayer;
+namespace ILIAS\Plugin\LimitedMediaPlayer\Setup;
 
 use ilDatabaseUpdateSteps;
 use ilDBInterface;
@@ -21,7 +21,7 @@ class DbUpdate implements ilDatabaseUpdateSteps
 
     public function execute(): void
     {
-        $execution_log = new ilDBStepExecutionDB($this->db, fn () => new \DateTime());
+        $execution_log = new ilDBStepExecutionDB($this->db, fn() => new \DateTime());
         $step_reader = new ilDBStepReader();
 
         $last_started_step = $execution_log->getLastStartedStep(self::class);
@@ -35,8 +35,7 @@ class DbUpdate implements ilDatabaseUpdateSteps
             $method = 'step_' . $step;
             try {
                 $this->$method();
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $this->revertStep($step);
                 throw $e;
             }
@@ -53,8 +52,11 @@ class DbUpdate implements ilDatabaseUpdateSteps
 
     private function revertStep(int $step): void
     {
-        $this->db->manipulateF("DELETE FROM il_db_steps WHERE class = %s AND step = %s",
-            ['text', 'integer'], [self::class, $step]);
+        $this->db->manipulateF(
+            "DELETE FROM il_db_steps WHERE class = %s AND step = %s",
+            ['text', 'integer'],
+            [self::class, $step]
+        );
     }
 
     /**
@@ -68,14 +70,14 @@ class DbUpdate implements ilDatabaseUpdateSteps
         $this->db->createTable(
             'limply_uses',
             [
-                'parent_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-                'page_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-                'file_id'       => ['type' => 'text',       'length' => 64, 'notnull' => true],
-                'user_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-                'plays'         => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-                'seconds'       => ['type' => 'float',                      'notnull' => false, 'default' => null],
-                'pass'          => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
-                'active_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+                'parent_id' => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'page_id' => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'file_id' => ['type' => 'text',       'length' => 64, 'notnull' => true],
+                'user_id' => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'plays' => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'seconds' => ['type' => 'float',                      'notnull' => false, 'default' => null],
+                'pass' => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+                'active_id' => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
             ],
             false
         );
@@ -97,12 +99,12 @@ class DbUpdate implements ilDatabaseUpdateSteps
             while ($row = $this->db->fetchAssoc($result)) {
                 $this->db->insert('limply_uses', [
                     'parent_id' => ['integer', $row['parent_id']],
-                    'page_id'   => ['integer', $row['page_id']],
-                    'file_id'   => ['text',    $row['mob_id']],
-                    'user_id'   => ['integer', $row['user_id']],
-                    'plays'     => ['integer', $row['plays']],
-                    'seconds'   => ['integer', $row['seconds'] == -1 ? null : $row['seconds']],
-                    'pass'      => ['integer', $row['pass'] == -1 ? null : $row['pass']],
+                    'page_id' => ['integer', $row['page_id']],
+                    'file_id' => ['text',    $row['mob_id']],
+                    'user_id' => ['integer', $row['user_id']],
+                    'plays' => ['integer', $row['plays']],
+                    'seconds' => ['integer', $row['seconds'] == -1 ? null : $row['seconds']],
+                    'pass' => ['integer', $row['pass'] == -1 ? null : $row['pass']],
                     'active_id' => ['integer', $row['active_id'] == -1 ? null : $row['active_id']],
 
                 ]);
@@ -123,12 +125,12 @@ class DbUpdate implements ilDatabaseUpdateSteps
         $this->db->createTable(
             'limply_limit',
             [
-                'id'            => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-                'parent_id'     => ['type' => 'integer',    'length' => 4,  'notnull' => true],
-                'page_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
-                'file_id'       => ['type' => 'text',       'length' => 64, 'notnull' => false, 'default' => null],
-                'user_id'       => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
-                'plays'         => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+                'id' => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'parent_id' => ['type' => 'integer',    'length' => 4,  'notnull' => true],
+                'page_id' => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+                'file_id' => ['type' => 'text',       'length' => 64, 'notnull' => false, 'default' => null],
+                'user_id' => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
+                'plays' => ['type' => 'integer',    'length' => 4,  'notnull' => false, 'default' => null],
             ],
             false
         );
@@ -153,12 +155,12 @@ class DbUpdate implements ilDatabaseUpdateSteps
             $result = $this->db->query("SELECT * FROM copg_pgcp_limply_limit");
             while ($row = $this->db->fetchAssoc($result)) {
                 $this->db->insert('limply_limit', [
-                    'id'        => ['integer', $this->db->nextId('limply_limit')],
+                    'id' => ['integer', $this->db->nextId('limply_limit')],
                     'parent_id' => ['integer', $row['parent_id']],
-                    'page_id'   => ['integer', $row['page_id'] == 0 ? null : $row['page_id']],
-                    'file_id'   => ['text',    $row['mob_id'] == 0 ? null : (string) $row['mob_id']],
-                    'user_id'   => ['integer', $row['page_id'] == 0 ? null : $row['page_id']],
-                    'plays'     => ['integer', $row['plays']],
+                    'page_id' => ['integer', $row['page_id'] == 0 ? null : $row['page_id']],
+                    'file_id' => ['text',    $row['mob_id'] == 0 ? null : (string) $row['mob_id']],
+                    'user_id' => ['integer', $row['page_id'] == 0 ? null : $row['page_id']],
+                    'plays' => ['integer', $row['limit_plays']],
                 ]);
             }
 
@@ -167,16 +169,12 @@ class DbUpdate implements ilDatabaseUpdateSteps
     }
 
     /**
-     * todo: Migrate existing media to file resources
+     * Migrate existing media to file resources
+     * This should work in ILIAS 8 and 9
      */
-    public function _step_5(): void
+    public function step_5(): void
     {
-        //  search for page contents
-        //  extract the parameters
-        //  find the media object
-        //  move the media files to irss
-        //  adapt the page content properties
-        //  replace file_ids in limply_uses and limply_limit
-        //  remove the media object from the page
+        $migrator = new MediaToResources();
+        $migrator->execute();
     }
 }

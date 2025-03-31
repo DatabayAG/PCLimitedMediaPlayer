@@ -12,8 +12,7 @@
      * @version $Id$
      */
 
-    if (!$ilDB->tableExists('copg_pgcp_limply_uses'))
-    {
+    if (!$ilDB->tableExists('copg_pgcp_limply_uses')) {
         $fields = array(
             'parent_id' => array(
                 'type' => 'integer',
@@ -60,8 +59,7 @@
 <#2>
 <?php
 
-    if (!$ilDB->tableExists('copg_pgcp_limply_limit'))
-    {
+    if (!$ilDB->tableExists('copg_pgcp_limply_limit')) {
         $fields = array(
             'parent_id' => array(
                 'type' => 'integer',
@@ -99,21 +97,23 @@
 ?>
 <#3>
 <?php
-    if(!$ilDB->tableColumnExists('copg_pgcp_limply_uses', 'active_id'))
-    {
-    	$ilDB->addTableColumn('copg_pgcp_limply_uses', 'active_id', array(
-    			'type' => 'integer',
-    			'length' => 4,
-    			'notnull' => true,
-    			'default' => -1
-    		)
+    if (!$ilDB->tableColumnExists('copg_pgcp_limply_uses', 'active_id')) {
+        $ilDB->addTableColumn(
+            'copg_pgcp_limply_uses',
+            'active_id',
+            array(
+                'type' => 'integer',
+                'length' => 4,
+                'notnull' => true,
+                'default' => -1
+            )
         );
     }
 ?>
 <#4>
 <?php
-// from version 2 on the new update class is used
-$update = new \ILIAS\Plugin\LimitedMediaPlayer\DbUpdate();
+    // add this for each new step until the setup is fully supported
+    $update = new \ILIAS\Plugin\LimitedMediaPlayer\Setup\DbUpdate();
 $update->prepare($ilDB);
 $update->execute();
 ?>
