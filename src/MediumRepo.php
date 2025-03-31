@@ -28,7 +28,7 @@ class MediumRepo
         ResourceStorage $storage,
         StakeholderRepository $stakeholder_repo,
         ResourceStakeholder $upload_stakeholder,
-        ResourceStakeholder $use_stakeholder,
+        ResourceStakeholder $use_stakeholder
     ) {
         $this->db = $db;
         $this->storage = $storage;
