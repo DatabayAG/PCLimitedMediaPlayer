@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace ILIAS\Plugin\LimitedMediaPlayer;
+namespace ILIAS\Plugin\LimitedMediaPlayer\Setup;
 
 use ilDatabaseUpdateSteps;
 use ilDBInterface;
@@ -35,8 +35,7 @@ class DbUpdate implements ilDatabaseUpdateSteps
             $method = 'step_' . $step;
             try {
                 $this->$method();
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $this->revertStep($step);
                 throw $e;
             }
@@ -53,8 +52,11 @@ class DbUpdate implements ilDatabaseUpdateSteps
 
     private function revertStep(int $step): void
     {
-        $this->db->manipulateF("DELETE FROM il_db_steps WHERE class = %s AND step = %s",
-            ['text', 'integer'], [self::class, $step]);
+        $this->db->manipulateF(
+            "DELETE FROM il_db_steps WHERE class = %s AND step = %s",
+            ['text', 'integer'],
+            [self::class, $step]
+        );
     }
 
     /**
@@ -158,7 +160,7 @@ class DbUpdate implements ilDatabaseUpdateSteps
                     'page_id'   => ['integer', $row['page_id'] == 0 ? null : $row['page_id']],
                     'file_id'   => ['text',    $row['mob_id'] == 0 ? null : (string) $row['mob_id']],
                     'user_id'   => ['integer', $row['page_id'] == 0 ? null : $row['page_id']],
-                    'plays'     => ['integer', $row['plays']],
+                    'plays'     => ['integer', $row['limit_plays']],
                 ]);
             }
 
@@ -167,16 +169,12 @@ class DbUpdate implements ilDatabaseUpdateSteps
     }
 
     /**
-     * todo: Migrate existing media to file resources
+     * Migrate existing media to file resources
+     * This should work in ILIAS 8 and 9
      */
-    public function _step_5(): void
+    public function step_5(): void
     {
-        //  search for page contents
-        //  extract the parameters
-        //  find the media object
-        //  move the media files to irss
-        //  adapt the page content properties
-        //  replace file_ids in limply_uses and limply_limit
-        //  remove the media object from the page
+        $migrator = new MediaToResources();
+        $migrator->execute();
     }
 }
