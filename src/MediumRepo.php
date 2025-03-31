@@ -37,6 +37,12 @@ class MediumRepo
         $this->use_stakeholder = $use_stakeholder;
     }
 
+    public function addFileFromStream(FileStream $stream, string $name): string
+    {
+        $id = $this->storage->manage()->stream($stream, $this->use_stakeholder, $name);
+        return $id->serialize();
+    }
+
     public function getFileStream(string $file_id): ?FileStream
     {
         $id = $this->storage->manage()->find($file_id);

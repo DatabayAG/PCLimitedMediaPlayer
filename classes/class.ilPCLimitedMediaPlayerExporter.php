@@ -11,7 +11,7 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
     private MediumRepo $medium_repo;
     private ilXMLWriter $xml_writer;
 
-    public function init() : void
+    public function init(): void
     {
         global $DIC;
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
@@ -19,9 +19,9 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
         $this->xml_writer = new ilXMLWriter();
     }
 
-    public function getXmlExportHeadDependencies(string $a_entity, string $a_target_release, array $a_ids) : array
+    public function getXmlExportHeadDependencies(string $a_entity, string $a_target_release, array $a_ids): array
     {
-        $file_ids =[];
+        $file_ids = [];
         foreach ($a_ids as $id) {
             $properties = self::getPCProperties($id);
             if (!empty($properties['file_id'])) {
@@ -45,33 +45,41 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
         return [];
     }
 
-    public function getXmlRepresentation(string $a_entity, string $a_schema_version, string $a_id) : string
+    public function getXmlRepresentation(string $a_entity, string $a_schema_version, string $a_id): string
     {
+        $properties = self::getPCProperties($a_id);
+
         $this->xml_writer->xmlStartTag('PCLimitedMediaPlayer');
-        foreach (self::getPCProperties($a_id) as $key => $value) {
+        foreach ($properties as $key => $value) {
             $this->xml_writer->xmlElement($this->toTag($key), null, (string) $value);
         }
 
-        if(!empty($properties['file_id'])) {
-            $this->xml_writer->xmlElement('FileName',
-            $this->medium_repo->getFileName((string)$properties['file_id']) ?? '');
+        if (!empty($properties['file_id'])) {
+            $this->xml_writer->xmlElement(
+                'FileName',
+                [],
+                $this->medium_repo->getFileName((string) $properties['file_id']) ?? ''
+            );
         }
-        if(!empty($properties['preview_id'])) {
-            $this->xml_writer->xmlElement('PreviewName',
-                $this->medium_repo->getFileName((string)$properties['preview_id']) ?? '');
+        if (!empty($properties['preview_id'])) {
+            $this->xml_writer->xmlElement(
+                'PreviewName',
+                [],
+                $this->medium_repo->getFileName((string) $properties['preview_id']) ?? ''
+            );
         }
 
-        $this->xml_writer->xmlEndTag("LongEssayAssessment");
+        $this->xml_writer->xmlEndTag("PCLimitedMediaPlayer");
         return $this->xml_writer->xmlDumpMem(false);
     }
 
 
-    public function getXmlExportTailDependencies(string $a_entity, string $a_target_release, array $a_ids) : array
+    public function getXmlExportTailDependencies(string $a_entity, string $a_target_release, array $a_ids): array
     {
         return [];
     }
 
-    public function getValidSchemaVersions(string $a_entity) : array
+    public function getValidSchemaVersions(string $a_entity): array
     {
         return [
             '5.3.0' => [
@@ -84,7 +92,7 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
         ];
     }
 
-    private function toTag(string $name) : string
+    private function toTag(string $name): string
     {
         return str_replace('_', '', ucwords($name, '_'));
     }
