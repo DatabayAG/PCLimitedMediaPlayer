@@ -491,7 +491,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     protected function getViewMode(): string
     {
-        switch (strtolower($this->get->string('cmdClass'))) {
+        switch (strtolower($this->get->string('cmdClass') ?? '')) {
             case strtolower(ilAssQuestionPreviewGUI::class):
                 return self::VIEW_PREVIEW;
 
