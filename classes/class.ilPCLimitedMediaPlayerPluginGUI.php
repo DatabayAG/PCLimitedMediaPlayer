@@ -6,7 +6,6 @@ use ILIAS\Plugin\LimitedMediaPlayer\LimitContext;
 use ILIAS\Plugin\LimitedMediaPlayer\Status;
 use ILIAS\Plugin\LimitedMediaPlayer\Usage;
 use ILIAS\Plugin\LimitedMediaPlayer\Limit;
-use ILIAS\Plugin\LimitedMediaPlayer\StakeholderForUpload;
 use ilGlobalTemplateInterface as Gti;
 use ILIAS\UI\Factory as UiFactory;
 use ILIAS\UI\Renderer as UiRenderer;

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use ILIAS\Plugin\LimitedMediaPlayer\MediumRepo;
 use ILIAS\Filesystem\Util\LegacyPathHelper;
-use ILIAS\ResourceStorage\Manager\Manager;
 
 class ilPCLimitedMediaPlayerImporter extends ilPageComponentPluginImporter
 {
