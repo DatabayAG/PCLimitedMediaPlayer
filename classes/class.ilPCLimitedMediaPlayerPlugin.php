@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use ILIAS\Plugin\LimitedMediaPlayer\Factory;
+use ILIAS\Plugin\LimitedMediaPlayer\Setup\DbUpdate;
 
 class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
 {
@@ -30,7 +31,7 @@ class ilPCLimitedMediaPlayerPlugin extends ilPageComponentPlugin
     public function uninstall(): bool
     {
         if (parent::uninstall()) {
-            $update = new \ILIAS\Plugin\LimitedMediaPlayer\DbUpdate();
+            $update = new DbUpdate();
             $update->prepare($this->db);
             $update->uninstall();
         }
