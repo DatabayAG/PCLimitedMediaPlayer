@@ -266,7 +266,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             ->withOption('0', $this->plugin->txt('play_on_page'), $this->plugin->txt('play_on_page_info'))
             ->withOption('1', $this->plugin->txt('play_in_modal'), $this->plugin->txt('play_in_modal_info'))
             ->withAdditionalTransformation($this->refinery->kindlyTo()->bool())
-            ->withValue($medium->getPlayInModal());
+            ->withValue($medium->getPlayInModal() ? '1' : '0');
 
         $fields['play_with_pause'] = $factory->radio($this->plugin->txt('play_pause'))
             ->withOption('1', $this->plugin->txt('play_with_pause'), $this->plugin->txt('play_with_pause_info'))
