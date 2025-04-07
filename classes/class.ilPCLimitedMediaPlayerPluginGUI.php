@@ -272,7 +272,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             ->withOption('1', $this->plugin->txt('play_with_pause'), $this->plugin->txt('play_with_pause_info'))
             ->withOption('0', $this->plugin->txt('play_without_pause'), $this->plugin->txt('play_without_pause_info'))
             ->withAdditionalTransformation($this->refinery->kindlyTo()->bool())
-            ->withValue($medium->getPlayWithPause());
+            ->withValue($medium->getPlayWithPause() ? '1' : '0');
 
         $sections['details'] = $factory->section($fields, $this->plugin->txt('settings_details'));
 
