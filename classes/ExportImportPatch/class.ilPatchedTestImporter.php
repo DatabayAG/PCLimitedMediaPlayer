@@ -14,25 +14,22 @@ class ilPatchedTestImporter extends ilTestImporter
         $this->page_importer->init();
     }
 
-    public function addTexonomyAndQuestionsMapping(array $question_id_mapping, int $new_obj_id, ilImportMapping $mapping): ilImportMapping
+    public function importXmlRepresentation(string $a_entity, string $a_id, string $a_xml, ilImportMapping $a_mapping): void
     {
-        $mapping = parent::addTexonomyAndQuestionsMapping($question_id_mapping, $new_obj_id, $mapping);
+        parent::importXmlRepresentation($a_entity, $a_id, $a_xml, $a_mapping);
 
-        foreach ($question_id_mapping as $oldQuestionId => $newQuestionId) {
-
-            $page_object = new ilAssQuestionPage((int) $newQuestionId);
+        foreach ($a_mapping->getMappingsOfEntity('Modules/Test', 'quest') as $old_id => $new_id) {
+            $page_object = new ilAssQuestionPage((int) $new_id);
             $page_object->buildDom();
             $this->page_importer->extractPluginProperties($page_object);
 
-            // needed for the import of page component plugins
-            $mapping->addMapping(
+            $a_mapping->addMapping(
                 "Services/COPage",
                 "pg",
-                'qpl:' . $oldQuestionId,
-                'qpl:' . $newQuestionId
+                'qpl:' . $old_id,
+                'qpl:' . $new_id
             );
         }
-        return $mapping;
     }
 
     public function finalProcessing(ilImportMapping $a_mapping): void
