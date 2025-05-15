@@ -49,28 +49,15 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
     {
         $properties = self::getPCProperties($a_id);
 
-        $this->xml_writer->xmlStartTag('PCLimitedMediaPlayer');
-        foreach ($properties as $key => $value) {
-            $this->xml_writer->xmlElement($this->toTag($key), null, (string) $value);
-        }
-
+        $data = [];
         if (!empty($properties['file_id'])) {
-            $this->xml_writer->xmlElement(
-                'FileName',
-                [],
-                $this->medium_repo->getFileName((string) $properties['file_id']) ?? ''
-            );
+            $data['file_name'] = $this->medium_repo->getFileName((string) $properties['file_id']) ?? '';
         }
         if (!empty($properties['preview_id'])) {
-            $this->xml_writer->xmlElement(
-                'PreviewName',
-                [],
-                $this->medium_repo->getFileName((string) $properties['preview_id']) ?? ''
-            );
+            $data['preview_name'] = $this->medium_repo->getFileName((string) $properties['preview_id']) ?? '';
         }
 
-        $this->xml_writer->xmlEndTag("PCLimitedMediaPlayer");
-        return $this->xml_writer->xmlDumpMem(false);
+        return '<data>' . htmlentities(json_encode($data)) . '</data>';
     }
 
 
