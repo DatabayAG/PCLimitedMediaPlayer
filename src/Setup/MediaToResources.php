@@ -113,7 +113,7 @@ class MediaToResources
                 }
             } catch (\Throwable $e) {
                 foreach (ilObject::_getAllReferences((int) $row['parent_id'] ?? 0) as $ref_id) {
-                    $this->logger->error($e->getMessage() . "  (pool_ref_id: {$ref_id}, question_id: {$row['page_id']}')");
+                    $this->logger->error($e->getMessage() . "  (ref_id: {$ref_id}, question_id: {$row['page_id']}')");
                     break;
                 }
             }
