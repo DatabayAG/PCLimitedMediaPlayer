@@ -1,4 +1,5 @@
 <?php
+
 // databay-patch: begin pc_plugin_export
 // this file replaces Services/Export/classes/class.ilImportExportFactory.php in Composer autoload
 // databay-patch: end pc_plugin_export
@@ -52,7 +53,7 @@ class ilImportExportFactory
             // databay-patch: begin pc_plugin_export
             // use own exporter classes for test and question pool export
             if ($class === 'ilTestExporter') {
-                return 'ilPCPluginTestExporter';
+                return 'ilPatchedTestExporter';
             }
             // databay-patch: end pc_plugin_export
 
@@ -120,7 +121,7 @@ class ilImportExportFactory
             // databay-patch: begin pc_plugin_export
             // use own exporter classes for test and question pool export
             if ($class === 'ilTestImporter') {
-                return 'ilPCPluginTestImporter';
+                return 'ilPatchedTestImporter';
             }
             // databay-patch: end pc_plugin_export
 
