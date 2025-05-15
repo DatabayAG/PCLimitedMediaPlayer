@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-class ilPCPluginTestExporter extends ilTestExporter
+class ilPatchedTestExporter extends ilTestExporter
 {
-    private ilPCPluginExportImportStore $pc_plugin_store;
+    private ilPatchedCOPageExporter $page_exporter;
 
-    public function __construct() {
-        parent::__construct();
-        $this->pc_plugin_store = ilPCPluginExportImportStore::getInstance();
+    public function init(): void
+    {
+        parent::init();
+        $this->page_exporter = new ilPatchedCOPageExporter();
+        $this->page_exporter->setExport($this->getExport());
+        $this->page_exporter->init();
     }
 
     public function getXmlRepresentation(string $a_entity, string $a_schema_version, string $id): string
@@ -19,7 +22,7 @@ class ilPCPluginTestExporter extends ilTestExporter
         foreach ($tst->getQuestions() as $question_id) {
             $page_object = new ilAssQuestionPage((int) $question_id);
             $page_object->buildDom();
-            $this->pc_plugin_store->extractPluginProperties($page_object);
+            $this->page_exporter->extractPluginProperties($page_object);
         }
 
         return parent::getXmlRepresentation($a_entity, $a_schema_version, $id);
@@ -29,7 +32,7 @@ class ilPCPluginTestExporter extends ilTestExporter
     {
         return array_merge(
             parent::getXmlExportTailDependencies($a_entity, $a_target_release, $a_ids),
-            $this->pc_plugin_store->getPluginDependencies()
+            $this->page_exporter->getPluginDependencies()
         );
     }
 }
