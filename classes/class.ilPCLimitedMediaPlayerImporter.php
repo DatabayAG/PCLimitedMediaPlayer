@@ -33,19 +33,14 @@ class ilPCLimitedMediaPlayerImporter extends ilPageComponentPluginImporter
         $properties = self::getPCProperties($new_id);
         $version = self::getPCVersion($new_id);
 
-        // get the properties that are export as XML
-        // most of them are already properties on the page
-        $export = [];
-        $xml = new SimpleXMLElement($a_xml);
-        foreach ($xml->children() as $name => $value) {
-            $value = (string) $value;
-            $export[$name] = empty($value) ? null : $value;
-        }
+        // get the data that is separately exported
+        // most properties are on the page
+        $data = (array) json_decode(html_entity_decode(substr($a_xml, 6, -7)));
 
         if (!empty($properties['file_id']) && $import_fs->has($files_path . '/' . $properties['file_id'])) {
             $properties['file_id'] = $this->medium_repo->addFileFromStream(
                 $import_fs->readStream($files_path . '/' . $properties['file_id']),
-                $export['FileName'] ?? ''
+                $data['file_name'] ?? ''
             );
         } else {
             $properties['file_id'] = '';
@@ -54,7 +49,7 @@ class ilPCLimitedMediaPlayerImporter extends ilPageComponentPluginImporter
         if (!empty($properties['preview_id']) && $import_fs->has($files_path . '/' . $properties['preview_id'])) {
             $properties['preview_id'] = $this->medium_repo->addFileFromStream(
                 $import_fs->readStream($files_path . '/' . $properties['preview_id']),
-                $export['PreviewName'] ?? ''
+                $data['preview_name'] ?? ''
             );
         } else {
             $properties['preview_id'] = '';
