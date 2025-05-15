@@ -52,8 +52,11 @@ class ilImportExportFactory
 
             // databay-patch: begin pc_plugin_export
             // use own exporter classes for test and question pool export
-            if ($class === 'ilTestExporter') {
-                return 'ilPatchedTestExporter';
+            if ($class === ilTestExporter::class) {
+                return ilPatchedTestExporter::class;
+            }
+            if ($class === ilTestQuestionPoolExporter::class) {
+                return ilPatchedTestQuestionPoolExporter::class;
             }
             // databay-patch: end pc_plugin_export
 
@@ -120,8 +123,11 @@ class ilImportExportFactory
 
             // databay-patch: begin pc_plugin_export
             // use own exporter classes for test and question pool export
-            if ($class === 'ilTestImporter') {
-                return 'ilPatchedTestImporter';
+            if ($class === ilTestImporter::class) {
+                return ilPatchedTestImporter::class;
+            }
+            if ($class === ilTestQuestionPoolImporter::class) {
+                return ilPatchedTestQuestionPoolImporter::class;
             }
             // databay-patch: end pc_plugin_export
 
