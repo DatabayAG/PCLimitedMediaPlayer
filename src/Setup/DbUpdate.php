@@ -174,7 +174,7 @@ class DbUpdate implements ilDatabaseUpdateSteps
      */
     public function step_5(): void
     {
-        $migrator = new MediaToResources();
-        $migrator->execute();
+        // removed in ILIAS 10
+        // update must be done from ILIAS 8 or ILIAS 9 version
     }
 }

@@ -366,6 +366,9 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
     protected function getElementPlayerHTML(Medium $medium, Limit $limit, LimitContext $limit_context): string
     {
+        $this->tpl->addJavaScript($this->plugin->getUrlPath() . '/resources/limited_media_player_page.js');
+        $this->tpl->addJavaScript(ILIAS_HTTP_PATH . '/assets/js/jquery.js');
+
         $tpl = $this->getPlugin()->getTemplate("tpl.page_player.html");
 
         $params = [

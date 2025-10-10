@@ -67,7 +67,7 @@ class MediumDelivery
             throw new Exception("File ID '$file_id' is not a valid file id");
         }
 
-        $ini = new ilIniFile("./ilias.ini.php");
+        $ini = new ilIniFile("../ilias.ini.php");
         $ini->read();
         $data_dir = $ini->readVariable("clients", "datadir");
         $client_id = $ini->readVariable("clients", "default");
@@ -101,17 +101,9 @@ class MediumDelivery
 
     private function deliver(string $path): void
     {
-        // don't normalize because this would check if path is in web data directory
-        $wac_path = new ilWACPath($path, false);
-
         $delivery = new Delivery($path, $this->http);
         $delivery->setCache(true);
         $delivery->setDisposition(Delivery::DISP_INLINE);
-
-        if ($wac_path->isStreamable()) {
-            $delivery->stream();
-        } else {
-            $delivery->deliver();
-        }
+        $delivery->stream();
     }
 }

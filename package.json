@@ -1,0 +1,14 @@
+{
+  "name": "limitedmediaplayer",
+  "version": "4.0.0",
+  "description": "ILIAS page component plugin for limited media replays",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DatabayAG/PCLimitedMediaPlayer.git"
+  },
+  "author": "Fred Neumann",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/DatabayAG/PCLimitedMediaPlayer#readme",
+  "dependencies": {
+  }
+}

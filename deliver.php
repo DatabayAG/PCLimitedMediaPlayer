@@ -8,7 +8,7 @@
 
 session_start();
 chdir('../../../../../../../');
-require_once('./libs/composer/vendor/autoload.php');
+require_once('../vendor/composer/vendor/autoload.php');
 
 $container = new \ILIAS\DI\Container();
 $GLOBALS["DIC"] = $container;
