@@ -17,9 +17,10 @@ or be a general limit.
 
 1. Put the content of the plugin directory in a subdirectory under your ILIAS main directory:
 Customizing/global/plugins/Services/COPage/PageComponent/PCLimitedMediaPlayer
-2. Run `composer du` in the main directory of your ILIAS installation
-3. Go to Administration > Extending ILIAS > Plugins
-4. Install and activate the plugin
+2. Run `npm clean-install --omit=dev --ignore-scripts` in the plugin directory
+3. Run `composer du` in the main directory of your ILIAS installation
+4. Go to Administration > Extending ILIAS > Plugins
+5. Install and activate the plugin
 
 ## Patch for export and import
 
