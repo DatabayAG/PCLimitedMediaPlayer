@@ -6,14 +6,7 @@
  */
 il.PCLimitedMediaPlayerPage = new function () {
 
-  /**
-   * Self reference for usage in event handlers
-   */
   var self = this;
-
-  /**
-   * Page is already initialized
-   */
   var initialized = false;
 
   /**
@@ -37,8 +30,6 @@ il.PCLimitedMediaPlayerPage = new function () {
   this.playClicked = function (event) {
     event.preventDefault();
     var file_id = $(event.currentTarget).attr('data-id');
-
-    $('#limplyModal' + file_id).modal('show');
     self.sendAction(file_id, 'volume', $('#limply' + file_id + ' .limply-volume').val());
     self.sendAction(file_id, 'play');
   };
@@ -46,17 +37,13 @@ il.PCLimitedMediaPlayerPage = new function () {
   this.pauseClicked = function (event) {
     event.preventDefault();
     var file_id = $(event.currentTarget).attr('data-id');
-    $('#limplyModal' + file_id).modal('hide');
     self.sendAction(file_id, 'pause');
   };
 
   this.continueClicked = function (event) {
     event.preventDefault();
     var file_id = $(event.currentTarget).attr('data-id');
-
-    $('#limplyModal' + file_id).modal({ show: true, backdrop: 'static', keyboard: false });
-    $('#limplyModal' + file_id + ' button.close').hide();
-    self.sendAction(file_id, 'volume', $('#limply' + file_id + ' .limply-volume').val());
+    self.sendAction(file_id, 'volume', $('#limply-controls' + file_id + ' .limply-volume').val());
     self.sendAction(file_id, 'continue');
   };
 
@@ -78,7 +65,7 @@ il.PCLimitedMediaPlayerPage = new function () {
       value: value
     };
 
-    $('#limply' + file_id + ' iframe').get(0).contentWindow.postMessage(data, '*');
+    $('#limply-iframe' + file_id).get(0).contentWindow.postMessage(data, '*');
   };
 
   /**
@@ -88,21 +75,17 @@ il.PCLimitedMediaPlayerPage = new function () {
   this.receivePlayerUpdate = function (event) {
     var data = event.originalEvent.data;
 
-    $('#limply' + data.file_id + ' .current_plays').html(data.current_plays);
-    $('#limply' + data.file_id + ' .current_seconds').html(Math.floor(Math.max(data.current_seconds,
-      0)));
+    $('#limply-info' + data.file_id + ' .current_plays').html(data.current_plays);
+    $('#limply-info' + data.file_id + ' .current_seconds').html(
+      Math.floor(Math.max(data.current_seconds, 0)));
 
-    var b_play = $('#limply' + data.file_id + ' .limply-play');
-    var b_pause = $('#limply' + data.file_id + ' .limply-pause');
-    var b_continue = $('#limply' + data.file_id + ' .limply-continue');
-    var d_volume = $('#limply' + data.file_id + ' .limply-volume-div');
-    var d_modal = $('#limplyModal' + data.file_id);
+    var b_play = $('#limply-controls' + data.file_id + ' .limply-play');
+    var b_pause = $('#limply-controls' + data.file_id + ' .limply-pause');
+    var b_continue = $('#limply-controls' + data.file_id + ' .limply-continue');
+    var d_volume = $('#limply-controls' + data.file_id + ' .limply-volume-div');
     
     switch (data.status) {
       case 'start':
-        if (b_play.hasClass('hidden')) {
-          $('#limplyModal' + data.file_id).modal('hide');
-        }
         b_play.removeClass('hidden');
         b_pause.addClass('hidden');
         b_continue.addClass('hidden');
@@ -125,7 +108,6 @@ il.PCLimitedMediaPlayerPage = new function () {
         b_pause.addClass('hidden');
         b_continue.addClass('hidden');
         d_volume.addClass('hidden');
-        d_modal.modal('hide');
         break;
     }
   };

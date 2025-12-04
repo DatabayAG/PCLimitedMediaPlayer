@@ -162,18 +162,21 @@ class ilPCLimitedMediaPlayerGUI
         $tpl->setVariable("MIME", $mime_type);
         $tpl->parseCurrentBlock();
 
-        $scripts = [iljQueryUtil::getLocaljQueryPath()];
-        $scripts = array_merge($scripts, []);
-        $scripts[] = $this->plugin->getUrlPath() . '/resources/limited_media_player_frame.js';
-
+        $scripts = [
+            './assets/js/jquery.js',
+            $this->plugin->getUrlPath() . '/node_modules/mediaelement/build/mediaelement-and-player.min.js',
+            $this->plugin->getUrlPath() . '/resources/limited_media_player_frame.js'
+        ];
         foreach ($scripts as $script) {
             $tpl->setCurrentBlock('script');
             $tpl->setVariable("SCRIPT_URL", $script);
             $tpl->parseCurrentBlock();
         }
 
-        $styles = [];
-        $styles[] = $this->plugin->getUrlPath() . '/resources/limited_media_player_style.css';
+        $styles = [
+            $this->plugin->getUrlPath() . '/node_modules/mediaelement/build/mediaelementplayer.min.css',
+            $this->plugin->getUrlPath() . '/resources/limited_media_player_style.css'
+        ];
         foreach ($styles as $style) {
             $tpl->setCurrentBlock('style');
             $tpl->setVariable("STYLE_URL", $style);

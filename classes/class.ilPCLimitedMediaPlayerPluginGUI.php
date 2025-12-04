@@ -325,30 +325,29 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                 if ($medium->getPlayInModal()) {
                     // show the player and pause/volume in a modal
                     // open the modal by play or continue
+                    $controls = ($medium->getPlayWithPause() ? ['play', 'pause', 'continue', 'volume'] : ['play', 'volume']);
                     $html = $this->getElementPlayerHTML($medium, $limit, $limit_context);
-                    $controls = ($medium->getPlayWithPause() ? ['pause', 'volume'] : ['volume']);
                     $html .= $this->getElementControlsHTML($medium, $usage, $status, $controls);
 
-                    $modal = ilModalGUI::getInstance();
-                    $modal->setId('limplyModal' . $medium->getFileId());
-                    $modal->setHeading($medium->getTitle());
-                    $modal->setBody($html);
-                    $modal->setType(ilModalGUI::TYPE_LARGE);
-                    $tpl->setVariable('PLAYER', $modal->getHTML());
+                    $page = $this->ui_factory->modal()->lightboxTextPage($html, $medium->getTitle());
+                    $modal = $this->ui_factory->modal()->lightbox([$page]);
+                    $button = $this->ui_factory->button()->standard($this->lng->txt('show'), '')
+                                      ->withOnClick($modal->getShowSignal());
 
-                    $controls = ($medium->getPlayWithPause() ? ['play', 'continue'] : ['play']);
+                    $tpl->setVariable('CONTROLS', $this->ui_renderer->render([$button]));
+
+                    // Ugly workaround because close button doesn't ork if modal is rendered inside COPage content
+                    $this->tpl->setVariable('CONTENT', $this->ui_renderer->render([$modal]));
                 } else {
                     // show the player and all controls embedded
-                    $tpl->setVariable('PLAYER', $this->getElementPlayerHTML($medium, $limit, $limit_context));
-
                     $controls = ($medium->getPlayWithPause() ? ['play', 'pause', 'continue', 'volume'] : ['play', 'volume']);
+                    $tpl->setVariable('PLAYER', $this->getElementPlayerHTML($medium, $limit, $limit_context));
+                    $tpl->setVariable('CONTROLS', $this->getElementControlsHTML($medium, $usage, $status, $controls));
                 }
-                $tpl->setVariable('CONTROLS', $this->getElementControlsHTML($medium, $usage, $status, $controls));
                 $tpl->setVariable('INFO', $this->getElementInfoHTML($medium, $limit, $usage));
 
                 // prepare javascript
                 iljQueryUtil::initjQuery();
-                iljQueryUtil::initjQueryUI();
                 $tpl->setVariable('MEDIUM_ID', $medium->getFileId());
                 $this->tpl->addOnLoadCode('il.PCLimitedMediaPlayerPage.initPage();');
                 break;
@@ -391,6 +390,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $tpl->setVariable('PLAYER_WIDTH', $medium->getWidth() ?? '100%');
         $tpl->setVariable('PLAYER_HEIGHT', max($medium->getHeight(), 50));
 
+        $tpl->setVariable('FILE_ID', $medium->getFileId());
         return $tpl->get();
     }
 
@@ -432,6 +432,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             $tpl->setVariable('VALUE_VOLUME', $preferences_repo->getVolume() * 100);
         }
 
+        $tpl->setVariable('FILE_ID', $medium->getFileId());
         return $tpl->get();
     }
 
@@ -485,6 +486,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             }
         }
 
+        $tpl->setVariable('FILE_ID', $medium->getFileId());
         return $tpl->get();
     }
 
