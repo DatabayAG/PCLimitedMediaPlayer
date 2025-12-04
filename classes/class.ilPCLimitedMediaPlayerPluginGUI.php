@@ -18,6 +18,8 @@ use ILIAS\Plugin\LimitedMediaPlayer\MediumRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\LimitRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
 use ILIAS\HTTP\GlobalHttpState;
+use ILIAS\UI\URLBuilder;
+use ILIAS\UI\URLBuilderToken;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
@@ -50,8 +52,12 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     private UiFactory $ui_factory;
     private UiRenderer $ui_renderer;
     private Refinery $refinery;
-    private ilCtrlAwareStorageUploadHandler $upload_handler;
+    private ilCtrlAwareStorageUploadHandler $medium_handler;
+    private ilCtrlAwareStorageUploadHandler $start_handler;
     private RequestInterface $request;
+
+    private UrlBuilder $process_builder;
+    private URLBuilderToken $process_token;
 
     private MediumRepo $medium_repo;
     private LimitRepo $limit_repo;
@@ -73,12 +79,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
         $this->ui_renderer = $DIC->ui()->renderer();
         $this->refinery = $DIC->refinery();
         $this->request = $DIC->http()->request();
+        $this->http = $DIC->http();
 
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
         $this->medium_repo = $this->plugin->factory()->mediumRepo();
         $this->limit_repo = $this->plugin->factory()->limitRepo();
         $this->usage_repo = $this->plugin->factory()->usageRepo();
-        $this->upload_handler = $this->plugin->factory()->uploadHandler();
+        $this->medium_handler = $this->plugin->factory()->uploadHandler('medium');
+        $this->start_handler = $this->plugin->factory()->uploadHandler('start');
         $this->get = $this->plugin->factory()->getVariables();
     }
 
@@ -86,7 +94,14 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
     {
         switch ($class = $this->ctrl->getCmdClass()) {
             case strtolower(ilPCLimitedMediaPlayerUploadHandlerGUI::class):
-                $this->ctrl->forwardCommand($this->upload_handler);
+                switch ($this->get->string('purpose')) {
+                    case 'medium':
+                        $this->ctrl->forwardCommand($this->medium_handler);
+                        break;
+                    case 'start':
+                        $this->ctrl->forwardCommand($this->start_handler);
+                        break;
+                }
                 break;
 
             default:
@@ -122,8 +137,15 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
      */
     public function create(): void
     {
-        $form = $this->initForm(true)->withRequest($this->request);
-        if (!empty($data = $form->getData())) {
+        $form = $this->initForm(true);
+
+        // simulates a form processing endpoint:
+        if ($this->http->wrapper()->query()->has($this->process_token->getName())) {
+            $form = $form->withRequest($this->request);
+            $data = $form->getData();
+        }
+
+        if (!empty($data)) {
             if ($this->saveForm($data, true)) {
                 $this->tpl->setOnScreenMessage(Gti::MESSAGE_TYPE_SUCCESS, $this->lng->txt("msg_obj_created"), true);
             } else {
@@ -232,7 +254,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
             ->withRequired(true)
             ->withValue($medium->getTitle());
 
-        $fields['file_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_file'))
+        $fields['file_id'] = $factory->file($this->medium_handler, $this->plugin->txt('medium_file'))
             ->withValue(empty($medium->getFileId()) ? [] : [$medium->getFileId()])
             ->withRequired(true);
 
@@ -253,7 +275,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         $fields = [];
 
-        $fields['preview_id'] = $factory->file($this->upload_handler, $this->plugin->txt('medium_startpic'))
+        $fields['preview_id'] = $factory->file($this->start_handler, $this->plugin->txt('medium_startpic'))
             ->withValue(empty($medium->getPreviewId()) ? [] : [$medium->getPreviewId()]);
 
         $fields['width'] = $factory->numeric($this->plugin->txt('medium_width'))
@@ -276,10 +298,19 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         $sections['details'] = $factory->section($fields, $this->plugin->txt('settings_details'));
 
-        return $this->ui_factory->input()->container()->form()->standard($this->ctrl->getFormAction(
+
+        $data_factory = new \ILIAS\Data\Factory();
+        $example_uri = $data_factory->uri(ILIAS_HTTP_PATH . '/' . $this->ctrl->getFormAction(
             $this,
             $create ? self::CMD_CREATE : self::CMD_UPDATE
-        ), $sections)
+        ));
+        $url_builder = new URLBuilder($example_uri);
+        [$this->process_builder, $this->process_token] = $url_builder->acquireParameter(explode('\\', __NAMESPACE__), "process");
+
+        return $this->ui_factory->input()->container()->form()->standard(
+            (string) $this->process_builder->withParameter($this->process_token, '1')->buildURI(),
+            $sections
+        )
             ->withSubmitLabel($this->lng->txt($create ? 'create' : 'save'));
     }
 

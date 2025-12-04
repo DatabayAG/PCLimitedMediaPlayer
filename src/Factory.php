@@ -77,9 +77,9 @@ class Factory
             new RequestVariables($this->http->wrapper()->post(), $this->refinery);
     }
 
-    public function uploadHandler(): ilPCLimitedMediaPlayerUploadHandlerGUI
+    public function uploadHandler(string $purpose): ilPCLimitedMediaPlayerUploadHandlerGUI
     {
-        return $this->instances[ilPCLimitedMediaPlayerUploadHandlerGUI::class] ??=
-            new ilPCLimitedMediaPlayerUploadHandlerGUI(new StakeholderForUpload());
+        return $this->instances[ilPCLimitedMediaPlayerUploadHandlerGUI::class][$purpose] ??=
+            (new ilPCLimitedMediaPlayerUploadHandlerGUI(new StakeholderForUpload()))->setPurpose($purpose);
     }
 }
