@@ -9,39 +9,17 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
 {
     private ilPCLimitedMediaPlayerPlugin $plugin;
     private MediumRepo $medium_repo;
-    private ilXMLWriter $xml_writer;
+    private static $file_ids = [];
 
     public function init(): void
     {
         global $DIC;
         $this->plugin = $DIC["component.factory"]->getPlugin(ilPCLimitedMediaPlayerPlugin::ID);
         $this->medium_repo = $this->plugin->factory()->mediumRepo();
-        $this->xml_writer = new ilXMLWriter();
     }
 
     public function getXmlExportHeadDependencies(string $a_entity, string $a_target_release, array $a_ids): array
     {
-        $file_ids = [];
-        foreach ($a_ids as $id) {
-            $properties = self::getPCProperties($id);
-            if (!empty($properties['file_id'])) {
-                $file_ids[] = $properties['file_id'];
-            }
-            if (!empty($properties['preview_id'])) {
-                $file_ids[] = $properties['preview_id'];
-            }
-        }
-
-        $export_fs = LegacyPathHelper::deriveFilesystemFrom($this->exp->export_run_dir);
-        $export_path = LegacyPathHelper::createRelativePath($this->exp->export_run_dir);
-        $files_path = $export_path . '/PCLimitedMediaFiles';
-        $export_fs->createDir($files_path);
-
-        foreach (array_unique($file_ids) as $file_id) {
-            $stream = $this->medium_repo->getFileStream($file_id);
-            $export_fs->writeStream($files_path . '/' . $file_id, $this->medium_repo->getFileStream($file_id));
-        }
-
         return [];
     }
 
@@ -63,6 +41,18 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
 
     public function getXmlExportTailDependencies(string $a_entity, string $a_target_release, array $a_ids): array
     {
+        $file_ids = [];
+        foreach ($a_ids as $id) {
+            $properties = self::getPCProperties($id);
+            if (!empty($properties['file_id'])) {
+                $file_ids[] = $properties['file_id'];
+            }
+            if (!empty($properties['preview_id'])) {
+                $file_ids[] = $properties['preview_id'];
+            }
+        }
+        self::$file_ids = $file_ids;
+
         return [];
     }
 
@@ -79,8 +69,17 @@ class ilPCLimitedMediaPlayerExporter extends ilPageComponentPluginExporter
         ];
     }
 
-    private function toTag(string $name): string
+    public function exportFiles(string $export_directory): array
     {
-        return str_replace('_', '', ucwords($name, '_'));
+        $export_fs = LegacyPathHelper::deriveFilesystemFrom($export_directory);
+        $export_path = LegacyPathHelper::createRelativePath($export_directory);
+        $files_path = $export_path . '/PCLimitedMediaFiles';
+        $export_fs->createDir($files_path);
+
+        foreach (array_unique(self::$file_ids) as $file_id) {
+            $stream = $this->medium_repo->getFileStream($file_id);
+            $export_fs->writeStream($files_path . '/' . $file_id, $this->medium_repo->getFileStream($file_id));
+        }
+        return [];
     }
 }
