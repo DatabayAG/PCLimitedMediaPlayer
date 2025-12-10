@@ -27,6 +27,10 @@ il.PCLimitedMediaPlayerPage = new function () {
     }
   };
 
+  this.modalClosed = function(file_id) {
+    self.sendAction(file_id, 'pause');
+  };
+
   this.playClicked = function (event) {
     event.preventDefault();
     var file_id = $(event.currentTarget).attr('data-id');

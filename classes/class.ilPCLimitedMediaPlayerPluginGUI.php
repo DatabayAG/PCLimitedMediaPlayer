@@ -18,6 +18,7 @@ use ILIAS\Plugin\LimitedMediaPlayer\MediumRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\LimitRepo;
 use ILIAS\Plugin\LimitedMediaPlayer\UsageRepo;
 use ILIAS\HTTP\GlobalHttpState;
+use ILIAS\UI\Implementation\Component\Signal;
 
 /**
  * @ilCtrl_isCalledBy ilPCLimitedMediaPlayerPluginGUI: ilPCPluggedGUI
@@ -349,10 +350,13 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
                     $html = $this->getElementPlayerHTML($medium, $limit, $limit_context);
                     $html .= $this->getElementControlsHTML($medium, $usage, $status, $controls);
 
+                    $file = $medium->getFileId();
                     $page = $this->ui_factory->modal()->lightboxTextPage($html, $medium->getTitle());
-                    $modal = $this->ui_factory->modal()->lightbox([$page]);
+                    $close = new Signal((new \ILIAS\Data\UUID\Factory())->uuid4AsString());
+                    $modal = $this->ui_factory->modal()->lightbox([$page])
+                    ->withAdditionalOnLoadCode(fn($id) => "$('#$id button.close').click(function() {il.PCLimitedMediaPlayerPage.modalClosed('$file')})");
                     $button = $this->ui_factory->button()->standard($this->lng->txt('show'), '')
-                                      ->withOnClick($modal->getShowSignal());
+                                                         ->withOnClick($modal->getShowSignal());
 
                     $tpl->setVariable('CONTROLS', $this->ui_renderer->render([$button]));
 
