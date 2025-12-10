@@ -56,6 +56,6 @@ class ilPCLimitedMediaPlayerImporter extends ilPageComponentPluginImporter
         }
 
         self::setPCProperties($new_id, $properties);
-        self::setPCVersion($new_id, $version);
+        self::setPCVersion($new_id, (string) $version);
     }
 }
