@@ -18,13 +18,13 @@ class ilPatchedTestQuestionPoolImporter extends ilTestQuestionPoolImporter
     {
         parent::importXmlRepresentation($a_entity, $a_id, $a_xml, $a_mapping);
 
-        foreach ($a_mapping->getMappingsOfEntity('Modules/TestQuestionPool', 'quest') as $old_id => $new_id) {
+        foreach ($a_mapping->getMappingsOfEntity('components/ILIAS/TestQuestionPool', 'quest') as $old_id => $new_id) {
             $page_object = new ilAssQuestionPage((int) $new_id);
             $page_object->buildDom();
             $this->page_importer->extractPluginProperties($page_object);
 
             $a_mapping->addMapping(
-                "Services/COPage",
+                "components/ILIAS/COPage",
                 "pg",
                 'qpl:' . $old_id,
                 'qpl:' . $new_id
@@ -34,7 +34,7 @@ class ilPatchedTestQuestionPoolImporter extends ilTestQuestionPoolImporter
 
     public function finalProcessing(ilImportMapping $a_mapping): void
     {
-        $page_map = $a_mapping->getMappingsOfEntity("Services/COPage", "pg");
+        $page_map = $a_mapping->getMappingsOfEntity("components/ILIAS/COPage", "pg");
         foreach ($page_map as $new_page_id) {
             $parts = explode(":", $new_page_id);
             $page = ilPageObjectFactory::getInstance($parts[0], (int) $parts[1], 0, '-');
