@@ -10,7 +10,7 @@
 $id = "limply";
 
 $version = "4.0.0";
-$ilias_min_version = "10.2";
+$ilias_min_version = "10.3";
 $ilias_max_version = "10.999";
 $responsible = "Fred Neumann";
 $responsible_mail = "fneumann@databay.de";
