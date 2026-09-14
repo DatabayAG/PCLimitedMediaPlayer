@@ -424,7 +424,7 @@ class ilPCLimitedMediaPlayerPluginGUI extends ilPageComponentPluginGUI
 
         if (in_array('volume', $controls)) {
             $tpl->setVariable('ID_VOLUME', $medium->getFileId());
-            $tpl->setVariable('ICON_VOLUME', ilUtil::getImagePath('icon_mob.svg'));
+            $tpl->setVariable('ICON_VOLUME', ilUtil::getImagePath('standard/icon_mob.svg'));
             $tpl->setVariable('TXT_VOLUME', $this->plugin->txt('runtime_volume'));
             $tpl->setVariable('VALUE_VOLUME', $preferences_repo->getVolume() * 100);
         }
